@@ -31,9 +31,29 @@ public class ServerOperation: NSOperation {
 
 	}
 
+
+	public typealias HUDMessage = (String, details: String?)
+
+
 	public var lastError: NSError?
 
+	public var hudLoadingMessage: HUDMessage? { return nil }
+	public var hudFailureMessage: HUDMessage? { return nil }
+	public var hudSuccessMessage: HUDMessage? { return nil }
+
+	internal var screenlet: BaseScreenlet
 	internal var onComplete: (ServerOperation -> Void)?
+
+	internal var anonymousAuth: AnonymousBasicAuthType? {
+		return screenlet as? AnonymousBasicAuthType
+	}
+
+
+	public init(screenlet: BaseScreenlet) {
+		self.screenlet = screenlet
+
+		super.init()
+	}
 
 
 	//MARK: NSOperation
@@ -41,8 +61,10 @@ public class ServerOperation: NSOperation {
 	public override func main() {
 		if preRun() {
 			if let session = createSession() {
+				prepareRun()
 				doRun(session: session)
 				postRun()
+				finishRun()
 			}
 		}
 		else {
@@ -55,49 +77,63 @@ public class ServerOperation: NSOperation {
 
 	//MARK: Public methods
 
-	public func validateAndEnqueue(onComplete: (ServerOperation -> Void)? = nil) -> ValidationError? {
-		let error = validateData()
-
-		if error == nil {
-			enqueue(onComplete: onComplete)
-		}
-
-		return error
-	}
-
-	public func enqueue(onComplete: (ServerOperation -> Void)? = nil) {
+	public func validateAndEnqueue(onComplete: (ServerOperation -> Void)? = nil) -> Bool {
 		if onComplete != nil {
 			self.onComplete = onComplete
 		}
 
-		OperationsQueue.addOperation(self)
+		let result = validateData()
+
+		if result {
+			OperationsQueue.addOperation(self)
+		}
+
+		return result
 	}
 
 
-	//MARK: Template methods
+	//MARK: Internal methods
 
-	public func validateData() -> ValidationError? {
-		// Do not add any code here. Children classes may not call super
-		return nil
-	}
-
-	public func preRun() -> Bool {
+	internal func validateData() -> Bool {
 		// Do not add any code here. Children classes may not call super
 		return true
 	}
 
-	public func doRun(#session: LRSession) {
+
+
+	internal func preRun() -> Bool {
+		// Do not add any code here. Children classes may not call super
+		return true
+	}
+
+	internal func doRun(session session: LRSession) {
 		// Do not add any code here. Children classes may not call super
 	}
 
-	public func postRun() {
+	internal func postRun() {
 		// Do not add any code here. Children classes may not call super
 	}
 
-	public func createSession() -> LRSession? {
-		if !SessionContext.hasSession {
+	internal func createSession() -> LRSession? {
+		if let anonymousAuthValue = anonymousAuth {
+			if anonymousAuthValue.anonymousApiUserName == nil ||
+					anonymousAuthValue.anonymousApiPassword == nil {
+
+				lastError = NSError.errorWithCause(.AbortedDueToPreconditions,
+						message: "User name and password are required for anonymous API calls")
+
+				return nil
+			}
+
+			return LRSession(
+					server: LiferayServerContext.server,
+					authentication: LRBasicAuthentication(
+							username: anonymousAuthValue.anonymousApiUserName!,
+							password: anonymousAuthValue.anonymousApiPassword!))
+		}
+		else if !SessionContext.hasSession {
 			lastError = NSError.errorWithCause(.AbortedDueToPreconditions,
-					message: "Login required to use this operation")
+					message: "Login required to use this screenlet")
 
 			return nil
 		}
@@ -105,14 +141,110 @@ public class ServerOperation: NSOperation {
 		return SessionContext.createSessionFromCurrentSession()
 	}
 
-	public func callOnComplete() {
+	//MARK: HUD methods
+
+	internal func showHUD(message message: String, details: String? = nil) {
+		dispatch_async(dispatch_get_main_queue()) {
+			self.screenlet.showHUDWithMessage(message, details: details)
+		}
+	}
+
+	internal func showHUD(
+			message message: String,
+			details: String?,
+			closeMode: BaseScreenlet.CloseMode,
+			spinnerMode: BaseScreenlet.SpinnerMode) {
+
+		dispatch_async(dispatch_get_main_queue()) {
+			self.screenlet.showHUDWithMessage(message,
+					details: details,
+					closeMode: closeMode,
+					spinnerMode: spinnerMode)
+		}
+	}
+
+	internal func showValidationHUD(message message: String, details: String? = nil) {
+		dispatch_async(dispatch_get_main_queue()) {
+			self.screenlet.showHUDAlert(message: message, details: details)
+		}
+	}
+
+	internal func hideHUD() {
+		dispatch_async(dispatch_get_main_queue()) {
+			self.screenlet.hideHUD()
+		}
+	}
+
+	internal func hideHUD(message message: String, details: String? = nil) {
+		dispatch_async(dispatch_get_main_queue()) {
+			self.screenlet.hideHUDWithMessage(message, details: details)
+		}
+	}
+
+	internal func hideHUD(errorMessage errorMessage: String, details: String? = nil) {
+		dispatch_async(dispatch_get_main_queue()) {
+			self.screenlet.showHUDWithMessage(errorMessage,
+					details: details,
+					closeMode: .ManualClose(true),
+					spinnerMode:.NoSpinner)
+		}
+	}
+
+	internal func hideHUD(error error: NSError, message: String, details: String? = nil) {
+		dispatch_async(dispatch_get_main_queue()) {
+			self.screenlet.showHUDWithMessage(message,
+				details: details,
+				closeMode:.ManualClose(true),
+				spinnerMode:.NoSpinner)
+		}
+	}
+
+
+	//MARK: Private methods
+
+	private func callOnComplete() {
 		if self.onComplete != nil {
-			dispatch_main {
+			dispatch_async(dispatch_get_main_queue()) {
 				self.onComplete!(self)
 
 				// this breaks the retain cycle between the op and 'onComplete'
 				self.onComplete = nil
 			}
+		}
+	}
+
+	private func prepareRun() {
+		self.screenlet.onStartOperation()
+		self.screenlet.screenletView?.onStartOperation()
+
+		if let messageValue = hudLoadingMessage {
+			showHUD(message: messageValue.0, details: messageValue.details)
+		}
+	}
+
+	private func finishRun() {
+		if let lastErrorValue = lastError {
+			if let messageValue = hudFailureMessage {
+				hideHUD(error: lastErrorValue,
+						message: messageValue.0,
+						details: messageValue.details)
+			}
+			else if hudLoadingMessage != nil {
+				hideHUD()
+			}
+		}
+		else {
+			if let messageValue = hudSuccessMessage {
+				hideHUD(message: messageValue.0, details: messageValue.details)
+			}
+			else if hudLoadingMessage != nil {
+				hideHUD()
+			}
+		}
+
+		dispatch_async(dispatch_get_main_queue()) {
+			self.screenlet.onFinishOperation()
+			self.screenlet.screenletView?.onFinishOperation()
 		}
 	}
 

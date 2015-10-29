@@ -20,35 +20,34 @@ public class LiferaySignUpOperation: ServerOperation {
 
 	public var resultUserAttributes: [String:AnyObject]?
 
-	private let viewModel: SignUpViewModel
-	private let anonymousUsername: String
-	private let anonymousPassword: String
+	override public var hudLoadingMessage: HUDMessage? {
+		return (LocalizedString("signup-screenlet", key: "loading-message", obj: self),
+				details: LocalizedString("signup-screenlet", key: "loading-details", obj: self))
+	}
+	override public var hudFailureMessage: HUDMessage? {
+		return (LocalizedString("signup-screenlet", key: "loading-error", obj: self), details: nil)
+	}
 
-
-	public init(viewModel: SignUpViewModel, anonymousUsername: String, anonymousPassword: String) {
-		self.viewModel = viewModel
-		self.anonymousUsername = anonymousUsername
-		self.anonymousPassword = anonymousPassword
-
-		super.init()
+	private var viewModel: SignUpViewModel {
+		return screenlet.screenletView as! SignUpViewModel
 	}
 
 
 	//MARK: ServerOperation
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override func validateData() -> Bool {
+		var valid = super.validateData()
 
-		if error == nil {
-			if viewModel.emailAddress == nil {
-				return ValidationError("signup-screenlet", "validation-email")
-			}
+		if valid && viewModel.emailAddress == nil {
+			showValidationHUD(message: LocalizedString("signup-screenlet", key: "validation", obj: self))
+
+			valid = false
 		}
 
-		return error
+		return valid
 	}
 
-	override public func doRun(#session: LRSession) {
+	override func doRun(session session: LRSession) {
 		let service = LRUserService_v62(session: session)
 
 		var outError: NSError?
@@ -60,33 +59,38 @@ public class LiferaySignUpOperation: ServerOperation {
 		let companyId = (self.companyId != 0)
 				? self.companyId : LiferayServerContext.companyId
 
-		let result = service.addUserWithCompanyId(companyId,
-				autoPassword: (password == ""),
-				password1: password,
-				password2: password,
-				autoScreenName: true,
-				screenName: viewModel.screenName ?? "",
-				emailAddress: viewModel.emailAddress,
-				facebookId: 0,
-				openId: "",
-				locale: NSLocale.currentLocaleString,
-				firstName: viewModel.firstName ?? "",
-				middleName: viewModel.middleName ?? "",
-				lastName: viewModel.lastName ?? "",
-				prefixId: 0,
-				suffixId: 0,
-				male: true,
-				birthdayMonth: 1,
-				birthdayDay: 1,
-				birthdayYear: 1970,
-				jobTitle: viewModel.jobTitle ?? "",
-				groupIds: [NSNumber(longLong: LiferayServerContext.groupId)],
-				organizationIds: emptyDict,
-				roleIds: emptyDict,
-				userGroupIds: emptyDict,
-				sendEmail: true,
-				serviceContext: nil,
-				error: &outError)
+		let result: [NSObject: AnyObject]!
+		do {
+			result = try service.addUserWithCompanyId(companyId,
+							autoPassword: (password == ""),
+							password1: password,
+							password2: password,
+							autoScreenName: true,
+							screenName: viewModel.screenName ?? "",
+							emailAddress: viewModel.emailAddress,
+							facebookId: 0,
+							openId: "",
+							locale: NSLocale.currentLocaleString,
+							firstName: viewModel.firstName ?? "",
+							middleName: viewModel.middleName ?? "",
+							lastName: viewModel.lastName ?? "",
+							prefixId: 0,
+							suffixId: 0,
+							male: true,
+							birthdayMonth: 1,
+							birthdayDay: 1,
+							birthdayYear: 1970,
+							jobTitle: viewModel.jobTitle ?? "",
+							groupIds: [NSNumber(longLong: LiferayServerContext.groupId)],
+							organizationIds: emptyDict,
+							roleIds: emptyDict,
+							userGroupIds: emptyDict,
+							sendEmail: true,
+							serviceContext: nil)
+		} catch let error as NSError {
+			outError = error
+			result = nil
+		}
 
 		if outError != nil {
 			lastError = outError!
@@ -100,10 +104,6 @@ public class LiferaySignUpOperation: ServerOperation {
 			lastError = nil
 			resultUserAttributes = result as? [String:AnyObject]
 		}
-	}
-
-	override public func createSession() -> LRSession? {
-		return SessionContext.createAnonymousBasicSession(anonymousUsername, anonymousPassword)
 	}
 
 }

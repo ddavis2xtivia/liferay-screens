@@ -21,8 +21,6 @@ public class BaseScreenletView: UIView, UITextFieldDelegate {
 
 	public weak var presentingViewController: UIViewController?
 
-	public var progressMessages: [String:ProgressMessages] { return [:] }
-
 
 	public var editable: Bool = true {
 		didSet {
@@ -32,7 +30,7 @@ public class BaseScreenletView: UIView, UITextFieldDelegate {
 
 	public var themeName = "default"
 
-	internal var onPerformAction: ((String, AnyObject?) -> Bool)?
+	internal var onPerformAction: ((String?, AnyObject?) -> Bool)?
 
 
 	deinit {
@@ -154,39 +152,21 @@ public class BaseScreenletView: UIView, UITextFieldDelegate {
 	 * onPreAction is invoked just before any user action is invoked.
 	 * Override this method to decide whether or not the user action should be fired.
 	 */
-	public func onPreAction(#name: String, sender: AnyObject?) -> Bool {
+	public func onPreAction(name name: String?, sender: AnyObject?) -> Bool {
 		return true
 	}
 
-	public func onSetDefaultDelegate(delegate: AnyObject, view: UIView) -> Bool {
+	public func onSetDefaultDelegate(delegate:AnyObject, view:UIView) -> Bool {
 		return true
 	}
 
 	public func onSetTranslations() {
 	}
 
-	public func onStartInteraction() {
+	public func onStartOperation() {
 	}
 
-	public func onFinishInteraction(result: AnyObject?, error: NSError?) {
-	}
-
-	public func createProgressPresenter() -> ProgressPresenter {
-		return MBProgressHUDPresenter()
-	}
-
-	public func progressMessageForAction(actionName: String,
-			messageType: ProgressMessageType) -> String? {
-
-		let messages = progressMessages[actionName] ?? progressMessages[BaseScreenlet.DefaultAction]
-
-		if let messages = messages {
-			if let message = messages[messageType] {
-				return message
-			}
-		}
-
-		return nil
+	public func onFinishOperation() {
 	}
 
 	public func userActionWithSender(sender: AnyObject?) {
@@ -198,17 +178,15 @@ public class BaseScreenletView: UIView, UITextFieldDelegate {
 		}
 	}
 
-	public func userAction(#name: String?) {
+	public func userAction(name name: String?) {
 		userAction(name: name, sender: nil)
 	}
 	
-	public func userAction(#name: String?, sender: AnyObject?) {
-		let actionName = name ?? BaseScreenlet.DefaultAction
-
-		if onPreAction(name: actionName, sender: sender) {
+	public func userAction(name name: String?, sender: AnyObject?) {
+		if onPreAction(name: name, sender: sender) {
 			endEditing(true)
 		
-			onPerformAction?(actionName, sender)
+			onPerformAction?(name, sender)
 		}
 	}
 
@@ -247,14 +225,14 @@ public class BaseScreenletView: UIView, UITextFieldDelegate {
 
 		addDefaultDelegatesForView(view)
 
-		for subview:UIView in view.subviews as! [UIView] {
+		for subview:UIView in view.subviews {
 			setUpView(subview)
 		}
 	}
 
 	private func changeEditable(editable: Bool, fromView view: UIView) {
 		view.userInteractionEnabled = editable
-		for v in view.subviews as! [UIView] {
+		for v in view.subviews {
 			changeEditable(editable, fromView: v)
 		}
 	}

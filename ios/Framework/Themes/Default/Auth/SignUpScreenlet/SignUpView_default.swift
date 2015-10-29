@@ -31,22 +31,11 @@ public class SignUpView_default: BaseScreenletView, SignUpViewModel {
 
 	//MARK: BaseScreenletView
 
-	override public var progressMessages: [String:ProgressMessages] {
-		return [
-			"signup-action" :
-				[.Working : LocalizedString("default", "signup-loading-message", self),
-				.Failure : LocalizedString("default", "signup-loading-error", self)],
-			"save-action" :
-				[.Working : LocalizedString("default", "signup-saving-message", self),
-				.Failure : LocalizedString("default", "signup-saving-error", self)],
-		]
-	}
-
-	override public func onStartInteraction() {
+	override public func onStartOperation() {
 		signUpButton!.enabled = false
 	}
 
-	override public func onFinishInteraction(result: AnyObject?, error: NSError?) {
+	override public func onFinishOperation() {
 		signUpButton!.enabled = true
 	}
 
@@ -59,23 +48,20 @@ public class SignUpView_default: BaseScreenletView, SignUpViewModel {
 		setButtonDefaultStyle(signUpButton)
 
 		scrollView?.contentSize = scrollView!.frame.size
+
+		BaseScreenlet.setHUDCustomColor(DefaultThemeBasicBlue)
 	}
 
 	override public func onSetTranslations() {
-		firstNameField?.placeholder = LocalizedString("default", "first-name-placeholder", self)
-		lastNameField?.placeholder = LocalizedString("default", "last-name-placeholder", self)
-		emailAddressField?.placeholder = LocalizedString("default", "auth-method-email", self)
-		passwordField?.placeholder = LocalizedString("default", "password-placeholder", self)
+		firstNameField?.placeholder = LocalizedString("default", key: "first-name-placeholder", obj: self)
+		lastNameField?.placeholder = LocalizedString("default", key: "last-name-placeholder", obj: self)
+		emailAddressField?.placeholder = LocalizedString("default", key: "auth-method-email", obj: self)
+		passwordField?.placeholder = LocalizedString("default", key: "password-placeholder", obj: self)
 
 		signUpButton?.replaceAttributedTitle(
-				LocalizedString("default", "signup-button", self),
+				LocalizedString("default", key: "sign-up-button", obj: self),
 				forState: .Normal)
 	}
-
-	override public func createProgressPresenter() -> ProgressPresenter {
-		return DefaultProgressPresenter()
-	}
-
 
 	//MARK: SignUpViewModel
 
@@ -133,12 +119,12 @@ public class SignUpView_default: BaseScreenletView, SignUpViewModel {
 				self.jobTitle = SessionContext.userAttribute("jobTitle") as? String
 			}
 			else {
-				key = "signup-button"
+				key = "sign-up-button"
 				actionName = "signup-action"
 			}
 
 			self.signUpButton?.replaceAttributedTitle(
-					LocalizedString("default", key, self),
+					LocalizedString("default", key: key, obj: self),
 					forState: .Normal)
 
 			self.signUpButton?.restorationIdentifier = actionName

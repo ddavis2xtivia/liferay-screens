@@ -19,60 +19,49 @@ public class LiferayDDLListPageOperation: LiferayPaginationOperation {
 	public var userId: Int64?
 	public var recordSetId: Int64?
 
-	internal let viewModel: DDLListViewModel
-
-
-	public init(viewModel: DDLListViewModel, startRow: Int, endRow: Int, computeRowCount: Bool) {
-		self.viewModel = viewModel
-
-		super.init(startRow: startRow, endRow: endRow, computeRowCount: computeRowCount)
+	internal var ddlListScreenlet: DDLListScreenlet {
+		return self.screenlet as! DDLListScreenlet
 	}
 
-
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
-
-		if error == nil {
-			if recordSetId == nil {
-				return ValidationError("ddllist-screenlet", "undefined-recordset")
-			}
-
-			if viewModel.labelFields.count == 0 {
-				return ValidationError("ddllist-screenlet", "undefined-fields")
-			}
-		}
-
-		return error
+	internal var viewModel: DDLListViewModel {
+		return screenlet.screenletView as! DDLListViewModel
 	}
 
-	override internal func doGetPageRowsOperation(#session: LRBatchSession, startRow: Int, endRow: Int) {
+	override func validateData() -> Bool {
+		var valid = super.validateData()
+
+		valid = valid && (recordSetId != nil)
+		valid = valid && (viewModel.labelFields.count > 0)
+
+		return valid
+	}
+
+	override internal func doGetPageRowsOperation(session session: LRBatchSession, page: Int) {
 		let service = LRScreensddlrecordService_v62(session: session)
 
 		if userId == nil {
-			service.getDdlRecordsWithDdlRecordSetId(recordSetId!,
+			try? service.getDdlRecordsWithDdlRecordSetId(recordSetId!,
 					locale: NSLocale.currentLocaleString,
-					start: Int32(startRow),
-					end: Int32(endRow),
-					error: nil)
+					start: Int32(ddlListScreenlet.firstRowForPage(page)),
+					end: Int32(ddlListScreenlet.firstRowForPage(page + 1)))
 		}
 		else {
-			service.getDdlRecordsWithDdlRecordSetId(recordSetId!,
+			try? service.getDdlRecordsWithDdlRecordSetId(recordSetId!,
 					userId: userId!,
 					locale: NSLocale.currentLocaleString,
-					start: Int32(startRow),
-					end: Int32(endRow),
-					error: nil)
+					start: Int32(ddlListScreenlet.firstRowForPage(page)),
+					end: Int32(ddlListScreenlet.firstRowForPage(page + 1)))
 		}
 	}
 
-	override internal func doGetRowCountOperation(#session: LRBatchSession) {
+	override internal func doGetRowCountOperation(session session: LRBatchSession) {
 		let service = LRScreensddlrecordService_v62(session: session)
 
 		if userId == nil {
-			service.getDdlRecordsCountWithDdlRecordSetId(recordSetId!, error: nil)
+			try? service.getDdlRecordsCountWithDdlRecordSetId(recordSetId!)
 		}
 		else {
-			service.getDdlRecordsCountWithDdlRecordSetId(recordSetId!, userId: userId!, error: nil)
+			try? service.getDdlRecordsCountWithDdlRecordSetId(recordSetId!, userId: userId!)
 		}
 	}
 

@@ -18,35 +18,40 @@ public class LiferayUpdateCurrentUserOperation: ServerOperation {
 
 	public var resultUserAttributes: [String:AnyObject]?
 
-	private let viewModel: SignUpViewModel
+	override public  var hudLoadingMessage: HUDMessage? {
+		return (LocalizedString("signup-screenlet", key: "saving-message", obj: self),
+				details: LocalizedString("signup-screenlet", key: "saving-details", obj: self))
+	}
+	override public var hudFailureMessage: HUDMessage? {
+		return (LocalizedString("signup-screenlet", key: "saving-error", obj: self), details: nil)
+	}
 
-
-	public init(viewModel: SignUpViewModel) {
-		self.viewModel = viewModel
-
-		super.init()
+	private var viewModel: SignUpViewModel {
+		return screenlet.screenletView as! SignUpViewModel
 	}
 
 
 	//MARK: ServerOperation
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override func validateData() -> Bool {
+		let valid = super.validateData()
 
-		if error == nil {
-			if viewModel.emailAddress == nil {
-				return ValidationError("signup-screenlet", "validation-email")
-			}
+		if valid && viewModel.emailAddress == nil {
+			showValidationHUD(message: LocalizedString("signup-screenlet", key: "validation", obj: self))
 
-			if viewModel.password == SessionContext.currentBasicPassword {
-				return ValidationError("signup-screenlet", "validation-change-password")
-			}
+			return false
 		}
 
-		return error
+		if viewModel.password == SessionContext.currentBasicPassword {
+			showValidationHUD(message: LocalizedString("signup-screenlet", key: "validation-password", obj: self))
+
+			return false
+		}
+
+		return true
 	}
 
-	override public func doRun(#session: LRSession) {
+	override func doRun(session session: LRSession) {
 		func attributeAsString(key: String) -> String {
 			return SessionContext.userAttribute(key) as! String
 		}
@@ -63,48 +68,53 @@ public class LiferayUpdateCurrentUserOperation: ServerOperation {
 		//FIXME 
 		// Values marked with (!!) will be overwritten in the server
 		// The JSON WS API isn't able to handle this scenario correctly
-		let result = service.updateUserWithUserId(attributeAsId("userId"),
-				oldPassword: SessionContext.currentBasicPassword,
-				newPassword1: viewModel.password ?? "",
-				newPassword2: viewModel.password ?? "",
-				passwordReset: false,
-				reminderQueryQuestion: attributeAsString("reminderQueryQuestion"),
-				reminderQueryAnswer: "", // (!!)
-				screenName: attributeAsString("screenName"),
-				emailAddress: viewModel.emailAddress,
-				facebookId: attributeAsId("facebookId"),
-				openId: attributeAsString("openId"),
-				languageId: attributeAsString("languageId"),
-				timeZoneId: attributeAsString("timeZoneId"),
-				greeting: attributeAsString("greeting"),
-				comments: attributeAsString("comments"),
-				firstName: viewModel.firstName ?? "",
-				middleName: viewModel.middleName ?? "",
-				lastName: viewModel.lastName ?? "",
-				prefixId: 0, 		// (!!)
-				suffixId: 0, 		// (!!)
-				male: true, 		// (!!)
-				birthdayMonth: 1, 	// (!!)
-				birthdayDay: 1, 	// (!!)
-				birthdayYear: 1970, // (!!)
-				smsSn: "", 			// (!!)
-				aimSn: "", 			// (!!)
-				facebookSn: "", 	// (!!)
-				icqSn: "", 			// (!!)
-				jabberSn: "", 		// (!!)
-				msnSn: "", 			// (!!)
-				mySpaceSn: "", 		// (!!)
-				skypeSn: "", 		// (!!)
-				twitterSn: "", 		// (!!)
-				ymSn: "", 			// (!!)
-				jobTitle: viewModel.jobTitle ?? "",
-				groupIds: [NSNumber(longLong: LiferayServerContext.groupId)],
-				organizationIds: [AnyObject](),
-				roleIds: [AnyObject](),
-				userGroupRoles: [AnyObject](),
-				userGroupIds: [AnyObject](),
-				serviceContext: nil,
-				error: &outError)
+		let result: [NSObject: AnyObject]!
+		do {
+			result = try service.updateUserWithUserId(attributeAsId("userId"),
+							oldPassword: SessionContext.currentBasicPassword,
+							newPassword1: viewModel.password ?? "",
+							newPassword2: viewModel.password ?? "",
+							passwordReset: false,
+							reminderQueryQuestion: attributeAsString("reminderQueryQuestion"),
+							reminderQueryAnswer: "", // (!!)
+							screenName: attributeAsString("screenName"),
+							emailAddress: viewModel.emailAddress,
+							facebookId: attributeAsId("facebookId"),
+							openId: attributeAsString("openId"),
+							languageId: attributeAsString("languageId"),
+							timeZoneId: attributeAsString("timeZoneId"),
+							greeting: attributeAsString("greeting"),
+							comments: attributeAsString("comments"),
+							firstName: viewModel.firstName ?? "",
+							middleName: viewModel.middleName ?? "",
+							lastName: viewModel.lastName ?? "",
+							prefixId: 0, 		// (!!)
+							suffixId: 0, 		// (!!)
+							male: true, 		// (!!)
+							birthdayMonth: 1, 	// (!!)
+							birthdayDay: 1, 	// (!!)
+							birthdayYear: 1970, // (!!)
+							smsSn: "", 			// (!!)
+							aimSn: "", 			// (!!)
+							facebookSn: "", 	// (!!)
+							icqSn: "", 			// (!!)
+							jabberSn: "", 		// (!!)
+							msnSn: "", 			// (!!)
+							mySpaceSn: "", 		// (!!)
+							skypeSn: "", 		// (!!)
+							twitterSn: "", 		// (!!)
+							ymSn: "", 			// (!!)
+							jobTitle: viewModel.jobTitle ?? "",
+							groupIds: [NSNumber(longLong: LiferayServerContext.groupId)],
+							organizationIds: [AnyObject](),
+							roleIds: [AnyObject](),
+							userGroupRoles: [AnyObject](),
+							userGroupIds: [AnyObject](),
+							serviceContext: nil)
+		} catch let error as NSError {
+			outError = error
+			result = nil
+		}
 
 		if outError != nil {
 			lastError = outError!

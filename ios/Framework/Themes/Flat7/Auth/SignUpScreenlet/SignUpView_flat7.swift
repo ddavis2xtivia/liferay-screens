@@ -12,7 +12,6 @@
 * details.
 */
 import UIKit
-import LiferayScreens
 
 
 public class SignUpView_flat7: SignUpView_default {
@@ -31,29 +30,25 @@ public class SignUpView_flat7: SignUpView_default {
 		super.onCreated()
 
 		setFlat7ButtonBackground(signUpButton)
+
+		BaseScreenlet.setHUDCustomColor(Flat7ThemeBasicGreen)
 	}
 
 	override public func onSetTranslations() {
-		let bundle = NSBundle(forClass: self.dynamicType)
+		titleLabel!.text = LocalizedString("flat7", key: "signup-title", obj: self)
+		subtitleLabel!.text = LocalizedString("flat7", key: "signup-subtitle", obj: self)
+		firstNamePlaceholder!.text = LocalizedString("flat7", key: "signup-first-name", obj: self)
+		lastNamePlaceholder!.text = LocalizedString("flat7", key: "signup-last-name", obj: self)
+		emailAddressPlaceholder!.text = LocalizedString("flat7", key: "signup-email", obj: self)
+		passwordPlaceholder!.text = LocalizedString("flat7", key: "signup-password", obj: self)
 
-		titleLabel!.text = LocalizedString("flat7", "signup-title", self)
-		subtitleLabel!.text = LocalizedString("flat7", "signup-subtitle", self)
-		firstNamePlaceholder!.text = LocalizedString("flat7", "signup-first-name", self)
-		lastNamePlaceholder!.text = LocalizedString("flat7", "signup-last-name", self)
-		emailAddressPlaceholder!.text = LocalizedString("flat7", "signup-email", self)
-		passwordPlaceholder!.text = LocalizedString("flat7", "signup-password", self)
-
-		signUpButton!.replaceAttributedTitle(LocalizedString("flat7", "signup-button", self),
+		signUpButton!.replaceAttributedTitle(LocalizedString("flat7", key: "signup-button", obj: self),
 				forState: .Normal)
 
 		firstNameField!.placeholder = "";
 		lastNameField!.placeholder = "";
 		emailAddressField!.placeholder = "";
 		passwordField!.placeholder = "";
-	}
-
-	override public func createProgressPresenter() -> ProgressPresenter {
-		return Flat7ProgressPresenter()
 	}
 
 
@@ -65,7 +60,7 @@ public class SignUpView_flat7: SignUpView_default {
 			replacementString string: String!)
 			-> Bool {
 
-		let newText = (textField.text as NSString).stringByReplacingCharactersInRange(range, withString:string)
+		let newText = (textField.text! as NSString).stringByReplacingCharactersInRange(range, withString:string)
 
 		var placeholder = firstNamePlaceholder!
 

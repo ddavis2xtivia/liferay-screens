@@ -40,13 +40,10 @@ public class BaseCredentialsStoreKeyChain : CredentialsStore {
 		keychain.set(String(LiferayServerContext.groupId),
 				key: "groupId")
 
-		var outError: NSError?
-		let userData = NSJSONSerialization.dataWithJSONObject(userAttributes!,
-				options: NSJSONWritingOptions.allZeros,
-				error: &outError)
+        let userData = try! NSJSONSerialization.dataWithJSONObject(userAttributes!, options: NSJSONWritingOptions())
 
 		let bundleId = NSBundle.mainBundle().bundleIdentifier ?? "liferay-screens"
-		keychain.set(userData!, key: "\(bundleId)-user")
+		keychain.set(userData, key: "\(bundleId)-user")
 
 		storeAuth(keychain: keychain, auth: session!.authentication!)
 
@@ -58,8 +55,6 @@ public class BaseCredentialsStoreKeyChain : CredentialsStore {
 
 		let error1 = keychain.removeAll()
 
-		let userKeychain = Keychain(service: NSBundle.mainBundle().bundleIdentifier!)
-
 		let error2 = keychain.removeAll()
 
 		return (error1 == nil && error2 == nil)
@@ -69,10 +64,10 @@ public class BaseCredentialsStoreKeyChain : CredentialsStore {
 		let keychain = BaseCredentialsStoreKeyChain.keychain()
 
 		let companyId = keychain.get("companyId")
-					.map { $0.toInt() }
+					.map { Int($0) }
 					.map { Int64($0!) }
 		let groupId = keychain.get("groupId")
-					.map { $0.toInt() }
+					.map { Int($0) }
 					.map { Int64($0!) }
 
 		if companyId != LiferayServerContext.companyId
@@ -82,12 +77,7 @@ public class BaseCredentialsStoreKeyChain : CredentialsStore {
 
 		let bundleId = NSBundle.mainBundle().bundleIdentifier ?? "liferay-screens"
 		if let userData = keychain.getData("\(bundleId)-user") {
-			var outError: NSError?
-			let json: AnyObject? =
-					NSJSONSerialization.JSONObjectWithData(userData,
-						options: NSJSONReadingOptions.allZeros,
-						error: &outError)
-
+			let json: AnyObject? = try! NSJSONSerialization.JSONObjectWithData(userData, options: NSJSONReadingOptions())
 			userAttributes = json as? [String:AnyObject]
 		}
 		else {
@@ -99,12 +89,13 @@ public class BaseCredentialsStoreKeyChain : CredentialsStore {
 		return (authentication != nil && userAttributes != nil)
 	}
 
-	public func storeAuth(#keychain: Keychain, auth: LRAuthentication) {
-		fatalError("This method must be overriden")
+	public func storeAuth(keychain keychain: Keychain, auth: LRAuthentication) {
+		assertionFailure("This method must be overriden")
 	}
 
-	public func loadAuth(#keychain: Keychain) -> LRAuthentication? {
-		fatalError("This method must be overriden")
+	public func loadAuth(keychain keychain: Keychain) -> LRAuthentication? {
+		assertionFailure("This method must be overriden")
+		return nil
 	}
 
 	public class func storedAuthType() -> AuthType? {

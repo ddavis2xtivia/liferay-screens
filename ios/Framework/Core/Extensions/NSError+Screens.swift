@@ -13,63 +13,35 @@
 */
 import Foundation
 
-private let dummyObject = MBProgressHUDPresenter()
-
-
-public class ValidationError : NSError {
-
-	public init(_ message: String) {
-		super.init(domain: "LiferayScreens",
-			code: ScreensErrorCause.ValidationFailed.rawValue,
-			userInfo: [NSLocalizedDescriptionKey: message])
-	}
-
-	public convenience init(_ key: String, _ message: String) {
-		self.init(LocalizedString(key, message, dummyObject))
-	}
-
-	public convenience init(_ key: String, _ message: String, _ bundleObject: AnyObject) {
-		self.init(LocalizedString(key, message, bundleObject))
-	}
-
-	required public init(coder aDecoder: NSCoder) {
-		super.init(coder: aDecoder)
-	}
-
-}
-
-
-public enum ScreensErrorCause: Int {
+public enum ScreenletsErrorCause: Int {
 
 	case AbortedDueToPreconditions = -2
 	case InvalidServerResponse = -3
-	case ValidationFailed = -4
-	case NotAvailable = -5
 
 }
 
 public extension NSError {
 
 	public class func errorWithCause(
-			cause: ScreensErrorCause,
+			cause: ScreenletsErrorCause,
 			userInfo: [NSObject : AnyObject]? = nil)
 			-> NSError {
 
 		return NSError(
-				domain: "LiferayScreens",
+				domain: "LiferayScreenlets",
 				code: cause.rawValue,
 				userInfo: userInfo)
 }
 
 	public class func errorWithCause(
-			cause: ScreensErrorCause,
+			cause: ScreenletsErrorCause,
 			message: String)
 			-> NSError {
 
 		let userInfo = [NSLocalizedDescriptionKey: message]
 
 		return NSError(
-				domain: "LiferayScreens",
+				domain: "LiferayScreenlets",
 				code: cause.rawValue,
 				userInfo: userInfo)
 	}

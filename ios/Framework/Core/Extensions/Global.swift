@@ -32,95 +32,25 @@ public func synchronized(lock: AnyObject, closure: Void -> Void) {
 }
 
 
-public func dispatch_delayed(delay: NSTimeInterval, block: dispatch_block_t) {
+public func delayed(delay: NSTimeInterval, block: dispatch_block_t) {
     let time = dispatch_time(DISPATCH_TIME_NOW, Int64(delay * Double(NSEC_PER_SEC)))
     dispatch_after(time, dispatch_get_main_queue(), block)
 }
 
-public func dispatch_async(block: dispatch_block_t) {
-	let queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0)
-	dispatch_async(queue) {
-		block()
-	}
-}
-
-
-public typealias Signal = () -> ()
-
-public func dispatch_sync(block: Signal -> ()) {
-	let waitGroup = dispatch_group_create()
-	dispatch_group_enter(waitGroup)
-	block {
-		dispatch_group_leave(waitGroup)
-	}
-	dispatch_group_wait(waitGroup, DISPATCH_TIME_FOREVER)
-}
-
-public func to_sync(function: Signal -> ()) -> () -> () {
-	return {
-		dispatch_sync(function)
-	}
-}
-
-public func dispatch_main(block: dispatch_block_t) {
-	if NSThread.isMainThread() {
-		block()
-	}
-	else {
-		dispatch_async(dispatch_get_main_queue()) {
-			block()
-		}
-	}
-}
-
-public func dispatch_main(forceDispatch: Bool, block: dispatch_block_t) {
-	if !forceDispatch && NSThread.isMainThread() {
-		block()
-	}
-	else {
-		dispatch_async(dispatch_get_main_queue()) {
-			block()
-		}
-	}
-}
-
-
-
-public func ScreenletName(klass: AnyClass) -> String {
-	var className = NSStringFromClass(klass)
-
-	if find(className, ".") != nil {
-		className = className.componentsSeparatedByString(".")[1]
-	}
-
-	return className.componentsSeparatedByString("Screenlet")[0]
-}
 
 public func LocalizedString(tableName: String, var key: String, obj: AnyObject) -> String {
 	key = "\(tableName)-\(key)"
 
-	func getString(bundle: NSBundle) -> String? {
-		let res = NSLocalizedString(key,
-			tableName: tableName,
-			bundle: bundle,
-			value: key,
-			comment: "");
-
-		return (res.lowercaseString != key.lowercaseString) ? res : nil
-	}
-
 	let bundles = NSBundle.allBundles(obj.dynamicType)
 
 	for bundle in bundles {
-		// use forced language bundle
-		if let languageBundle = NSLocale.bundleForCurrentLanguageInBundle(bundle) {
-			if let res = getString(languageBundle) {
-				return res
-			}
-		}
+		let res = NSLocalizedString(key,
+					tableName: tableName,
+					bundle: bundle,
+					value: key,
+					comment: "");
 
-		// try with outer bundle
-		if let res = getString(bundle) {
+		if res.lowercaseString != key {
 			return res
 		}
 	}
@@ -167,7 +97,7 @@ public func adjustRectForCurrentOrientation(rect: CGRect) -> CGRect {
 	return adjustedRect
 }
 
-public func centeredRectInView(view: UIView, #size: CGSize) -> CGRect {
+public func centeredRectInView(view: UIView, size: CGSize) -> CGRect {
 	return CGRectMake(
 			(view.frame.size.width - size.width) / 2,
 			(view.frame.size.height - size.height) / 2,

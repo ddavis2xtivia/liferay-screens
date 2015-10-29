@@ -27,7 +27,7 @@ class OAuthInteractor: Interactor, LRCallback {
 	var OAuthConfig: LROAuthConfig?
 	var OAuthSession: LRSession?
 
-	init(screenlet: BaseScreenlet?,
+	init(screenlet: BaseScreenlet,
 			consumerKey: String,
 			consumerSecret: String) {
 
@@ -38,8 +38,8 @@ class OAuthInteractor: Interactor, LRCallback {
 	}
 
 	override func start() -> Bool {
-		if screenlet?.presentingViewController == nil {
-			println("ERROR: You need to set the presentingViewController before start OAuthInteractor")
+		if screenlet.presentingViewController == nil {
+			print("ERROR: You need to set the presentingViewController before start OAuthInteractor")
 
 			return false
 		}
@@ -61,13 +61,13 @@ class OAuthInteractor: Interactor, LRCallback {
 						self.showWebView(URL)
 					}
 					else {
-						println("ERROR: OAuth's authorizeTokenURL is not valid: \($0.authorizeTokenURL)")
+						print("ERROR: OAuth's authorizeTokenURL is not valid: \($0.authorizeTokenURL)")
 						let err = NSError.errorWithCause(.InvalidServerResponse)
 						self.onFailure?(err)
 					}
 				},
 				onFailure: { err in
-					println("ERROR: Cannot get request token")
+					print("ERROR: Cannot get request token")
 					self.onFailure?(err)
 				}
 		)
@@ -78,7 +78,7 @@ class OAuthInteractor: Interactor, LRCallback {
 	private func showWebView(URL: NSURL) {
 		webViewController = OAuthWebViewController(
 				URL: URL,
-				themeName: screenlet?.themeName ?? "default")
+				themeName: screenlet.themeName ?? "default")
 
 		webViewController!.onAuthorized = { [weak webViewController] OAuthVerifier in
 			webViewController?.dismissViewControllerAnimated(true, completion: nil)
@@ -88,7 +88,7 @@ class OAuthInteractor: Interactor, LRCallback {
 			self.requestAccessToken()
 		}
 
-		if let vc = screenlet?.presentingViewController {
+		if let vc = screenlet.presentingViewController {
 			vc.presentViewController(webViewController!, animated: true, completion: nil)
 		}
 	}
@@ -100,7 +100,7 @@ class OAuthInteractor: Interactor, LRCallback {
 					self.requestUserAttributes(config)
 				},
 				onFailure: { err in
-					println("ERROR: Cannot get access token")
+					print("ERROR: Cannot get access token")
 					self.onFailure?(err)
 				}
 		)
@@ -115,7 +115,11 @@ class OAuthInteractor: Interactor, LRCallback {
 		let srv = LRScreensuserService_v62(session: OAuthSession!)
 
 		var outError: NSError?
-		srv.getCurrentUser(&outError)
+		do {
+			try srv.getCurrentUser()
+		} catch let error as NSError {
+			outError = error
+		}
 	}
 
 	func onFailure(error: NSError!) {

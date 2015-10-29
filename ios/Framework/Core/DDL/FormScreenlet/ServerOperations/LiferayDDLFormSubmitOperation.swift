@@ -26,86 +26,87 @@ public class LiferayDDLFormSubmitOperation: ServerOperation {
 	public var resultRecordId: Int64?
 	public var resultAttributes: NSDictionary?
 
-	private let values: [String:AnyObject]
-	private let viewModel: DDLFormViewModel?
 
-
-	public convenience init(values: [String:AnyObject]) {
-		self.init(values: values, viewModel: nil)
+	override public var hudLoadingMessage: HUDMessage? {
+		return (LocalizedString("ddlform-screenlet", key: "submitting-message", obj: self),
+				details: LocalizedString("ddlform-screenlet", key: "submitting-details", obj: self))
 	}
 
-	public init(values: [String:AnyObject], viewModel: DDLFormViewModel?) {
-		self.values = values
-		self.viewModel = viewModel
+	override public var hudSuccessMessage: HUDMessage? {
+		return (LocalizedString("ddlform-screenlet", key: "submitted", obj: self), details: nil)
+	}
 
-		super.init()
+	override public var hudFailureMessage: HUDMessage? {
+		return (LocalizedString("ddlform-screenlet", key: "submitting-error", obj: self), details: nil)
+	}
+
+	internal var viewModel: DDLFormViewModel {
+		return screenlet.screenletView as! DDLFormViewModel
 	}
 
 
 	//MARK: ServerOperation
 
-	override public func validateData() -> ValidationError? {
-		var error = super.validateData()
+	override func validateData() -> Bool {
+		var valid = super.validateData()
 
-		if error == nil {
-			if (userId ?? 0) == 0 {
-				return ValidationError("ddlform-screenlet", "undefined-user")
-			}
+		valid = valid && (userId != nil)
+		valid = valid && (groupId != nil)
+		valid = valid && !(recordId != nil && recordSetId == nil)
+		valid = valid && !viewModel.values.isEmpty
 
-			if groupId == nil {
-				return ValidationError("ddlform-screenlet", "undefined-group")
-			}
+		if valid && !viewModel.validateForm(autoscroll: autoscrollOnValidation) {
+			showHUD(message: LocalizedString("ddlform-screenlet", key: "validation", obj: self),
+					details: LocalizedString("ddlform-screenlet", key: "validation-details", obj: self),
+					closeMode: .AutocloseDelayed(3.0, true),
+					spinnerMode: .NoSpinner)
 
-			if recordSetId == nil {
-				return ValidationError("ddlform-screenlet", "undefined-recordset")
-			}
-
-			if values.isEmpty {
-				return ValidationError("ddlform-screenlet", "undefined-values")
-			}
-
-			if let viewModel = viewModel {
-				error = viewModel.validateForm(autoscroll: autoscrollOnValidation)
-			}
+			valid = false
 		}
 
-		return error
+		return valid
 	}
 
-	override public func doRun(#session: LRSession) {
+	override internal func doRun(session session: LRSession) {
 		let service = LRDDLRecordService_v62(session: session)
 
 		let serviceContextAttributes = [
-			"userId": NSNumber(longLong: userId!),
-			"scopeGroupId": NSNumber(longLong: groupId!)]
+				"userId": NSNumber(longLong: userId!),
+				"scopeGroupId": NSNumber(longLong: groupId!)]
 
 		let serviceContextWrapper = LRJSONObjectWrapper(JSONObject: serviceContextAttributes)
 
 		resultRecordId = nil
 		resultAttributes = nil
 
-		var recordDictionary: [NSObject : AnyObject]?
+        var recordDictionary = NSDictionary()
 
 		if recordId == nil {
-			recordDictionary = service.addRecordWithGroupId(groupId!,
-				recordSetId: recordSetId!,
-				displayIndex: 0,
-				fieldsMap: values,
-				serviceContext: serviceContextWrapper,
-				error: &lastError)
+			do {
+				recordDictionary = try service.addRecordWithGroupId(groupId!,
+						recordSetId: recordSetId!,
+						displayIndex: 0,
+						fieldsMap: viewModel.values,
+						serviceContext: serviceContextWrapper)
+			} catch let error as NSError {
+				lastError = error
+			}
 		}
 		else {
-			recordDictionary = service.updateRecordWithRecordId(recordId!,
-				displayIndex: 0,
-				fieldsMap: values,
-				mergeFields: true,
-				serviceContext: serviceContextWrapper,
-				error: &lastError)
+			do {
+				recordDictionary = try service.updateRecordWithRecordId(recordId!,
+						displayIndex: 0,
+						fieldsMap: viewModel.values,
+						mergeFields: true,
+						serviceContext: serviceContextWrapper)
+			} catch let error as NSError {
+				lastError = error
+			}
 		}
 
 		if lastError == nil {
-			if let recordIdValue = recordDictionary?["recordId"]?.longLongValue {
-				resultRecordId = recordIdValue
+			if let recordIdValue = recordDictionary["recordId"]! as? Int {
+				resultRecordId = Int64(recordIdValue)
 				resultAttributes = recordDictionary
 			}
 			else {

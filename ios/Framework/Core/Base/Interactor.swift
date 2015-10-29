@@ -16,37 +16,38 @@ import UIKit
 
 @objc public class Interactor: NSObject {
 
-	public var actionName: String?
-
 	public var onSuccess: (Void -> Void)?
 	public var onFailure: (NSError -> Void)?
 
-	public var lastError: NSError?
+	public let screenlet: BaseScreenlet
 
-	public let screenlet: BaseScreenlet?
-
-
-	public init(screenlet: BaseScreenlet?) {
+	public init(screenlet: BaseScreenlet) {
 		self.screenlet = screenlet
-
-		super.init()
-	}
-
-	override public convenience init() {
-		self.init(screenlet: nil)
 	}
 
 	public func callOnSuccess() {
-		dispatch_main {
-			self.onSuccess?()
-			self.finishWithError(nil)
+		if NSThread.isMainThread() {
+			onSuccess?()
+			finish()
+		}
+		else {
+			dispatch_async(dispatch_get_main_queue()) {
+				self.onSuccess?()
+				self.finish()
+			}
 		}
 	}
 
 	public func callOnFailure(error: NSError) {
-		dispatch_main {
-			self.onFailure?(error)
-			self.finishWithError(error)
+		if NSThread.isMainThread() {
+			onFailure?(error)
+			finish()
+		}
+		else {
+			dispatch_async(dispatch_get_main_queue()) {
+				self.onFailure?(error)
+				self.finish()
+			}
 		}
 	}
 
@@ -54,12 +55,8 @@ import UIKit
 		return false
 	}
 
-	public func interactionResult() -> AnyObject? {
-		return nil
-	}
-
-	private func finishWithError(error: NSError?) {
-		screenlet?.endInteractor(self, error: error)
+	private func finish() {
+		screenlet.endInteractor(self)
 
 		// break retain cycle
 		onSuccess = nil

@@ -24,30 +24,42 @@ public class LiferayUploadUserPortraitOperation: ServerOperation {
 	private let maxSize = 300 * 1024
 	private var fileTooLarge = false
 
+	override public var hudFailureMessage: HUDMessage? {
+		let key: String
+		let details: String?
 
-	public init(userId: Int64, image: UIImage) {
+		if fileTooLarge {
+			key = "too-large-file"
+			details = LocalizedString("userportrait-screenlet", key: "too-large-file-details", obj: self)
+		}
+		else {
+			key = "uploading-error"
+			details = nil
+		}
+
+		return (LocalizedString("userportrait-screenlet", key: key, obj: self), details: details)
+	}
+
+
+	public init(screenlet: BaseScreenlet, userId: Int64, image: UIImage) {
 		self.userId = userId
 		self.image = image
 
-		super.init()
+		super.init(screenlet: screenlet)
 	}
 
 
 	//MARK: ServerOperation
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override internal func validateData() -> Bool {
+		var valid = super.validateData()
+		
+		valid = valid && (self.image != nil)
 
-		if error == nil {
-			if self.image == nil {
-				return ValidationError("userportrait-screenlet", "undefined-image")
-			}
-		}
-
-		return error
+		return valid
 	}
 
-	override public func doRun(#session: LRSession) {
+	override internal func doRun(session session: LRSession) {
 		if let imageBytes = reduceImage(self.image!, factor: 0.95) {
 			self.image = nil
 			uploadBytes(imageBytes, withSession: session)
@@ -67,9 +79,9 @@ public class LiferayUploadUserPortraitOperation: ServerOperation {
 			return nil
 		}
 
-		var imageBytes = UIImageJPEGRepresentation(src, CGFloat(factor))
+		let imageBytes = UIImageJPEGRepresentation(src, CGFloat(factor))
 
-		return (imageBytes.length < maxSize)
+		return (imageBytes!.length < maxSize)
 				? imageBytes
 				: reduceImage(src, factor: factor - 0.05)
 	}
@@ -79,7 +91,13 @@ public class LiferayUploadUserPortraitOperation: ServerOperation {
 
 		lastError = nil
 
-		let result = service.updatePortraitWithUserId(self.userId, bytes: imageBytes, error: &lastError)
+		let result: [NSObject: AnyObject]!
+		do {
+			result = try service.updatePortraitWithUserId(self.userId, bytes: imageBytes)
+		} catch let error as NSError {
+			lastError = error
+			result = nil
+		}
 
 		if lastError == nil {
 			if result is [String:AnyObject] {

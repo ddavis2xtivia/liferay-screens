@@ -17,46 +17,23 @@ import Foundation
 //TODO: Unit test
 
 
-public class DDLRecord: NSObject, NSCoding {
+public class DDLRecord: NSObject {
 
 	public var fields: [DDLField] = []
 
 	public var attributes: [String:AnyObject] = [:]
 
-	public var recordId: Int64? {
+	public var recordId: Int64 {
 		get {
-			return attributes["recordId"]?.longLongValue
+			return (attributes["recordId"] ?? 0).longLongValue
 		}
 		set {
-			if let newValue = newValue {
-				attributes["recordId"] = NSNumber(longLong: newValue)
-			}
-			else {
-				attributes.removeValueForKey("recordId")
-			}
+			attributes["recordId"] = Int(newValue)
 		}
 	}
 
 	public subscript(fieldName: String) -> DDLField? {
 		return fieldBy(name: fieldName)
-	}
-
-	public var values: [String:AnyObject] {
-		var result = [String:AnyObject]()
-
-		for field in fields {
-			if let value = field.currentValueAsString {
-				//FIXME - LPS-49460
-				// Server rejects the request if the value is empty string.
-				// This way we workaround the problem but a field can't be
-				// emptied when you're editing an existing row.
-				if value != "" {
-					result[field.name] = value
-				}
-			}
-		}
-
-		return result
 	}
 
 
@@ -72,50 +49,25 @@ public class DDLRecord: NSObject, NSCoding {
 		}
 	}
 
-	public init(data: [String:AnyObject], attributes: [String:AnyObject]) {
+	public init(recordData: [String:AnyObject]) {
 		super.init()
 
-		let parsedFields = DDLValuesParser().parse(data)
-		if !parsedFields.isEmpty {
-			fields = parsedFields
-		}
-
-		self.attributes = attributes
-	}
-
-
-	public init(dataAndAttributes: [String:AnyObject]) {
-		super.init()
-
-		if let recordFields = (dataAndAttributes["modelValues"] ?? nil) as? [String:AnyObject] {
+		if let recordFields = (recordData["modelValues"] ?? nil) as? [String:AnyObject] {
 			let parsedFields = DDLValuesParser().parse(recordFields)
 		 	if !parsedFields.isEmpty {
 				fields = parsedFields
 			}
 		}
 
-		if let recordAttributes = (dataAndAttributes["modelAttributes"] ?? nil) as? [String:AnyObject] {
+		if let recordAttributes = (recordData["modelAttributes"] ?? nil) as? [String:AnyObject] {
 			attributes = recordAttributes
 		}
 	}
 
-	public required init(coder aDecoder: NSCoder) {
-		fields = aDecoder.decodeObjectForKey("fields") as! [DDLField]
-		attributes = aDecoder.decodeObjectForKey("attributes") as! [String:AnyObject]
-
-		super.init()
-	}
-
-	public func encodeWithCoder(aCoder: NSCoder) {
-		aCoder.encodeObject(fields, forKey:"fields")
-		aCoder.encodeObject(attributes, forKey:"attributes")
-	}
-
-
 
 	//MARK: Public methods
 
-	public func fieldBy(#name: String) -> DDLField? {
+	public func fieldBy(name name: String) -> DDLField? {
 		for field in fields {
 			if field.name.lowercaseString == name.lowercaseString {
 				return field
@@ -125,21 +77,8 @@ public class DDLRecord: NSObject, NSCoding {
 		return nil
 	}
 
-	public func fieldsBy(#type: AnyClass) -> [DDLField] {
-		var result = [DDLField]()
-		let typeName = NSStringFromClass(type)
-
-		for field in fields {
-			if NSStringFromClass(field.dynamicType) == typeName {
-				result.append(field)
-			}
-		}
-
-		return result
-	}
-
 	public func updateCurrentValues(values: [String:AnyObject]) {
-		for (index,field) in enumerate(fields) {
+		for (_,field) in fields.enumerate() {
 			let fieldValueLabel: AnyObject? = (values[field.name] ?? nil)
 			if fieldValueLabel != nil {
 				if fieldValueLabel is String {

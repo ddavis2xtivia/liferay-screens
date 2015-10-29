@@ -41,24 +41,25 @@ import UIKit
 	}
 
 	public var classNameId: Int64 {
-		return (attributes["classNameId"] as! NSNumber).longLongValue
+		return Int64(attributes["classNameId"] as! Int)
 	}
 
 	public var classPK: Int64 {
-		return (attributes["classPK"] as! NSNumber).longLongValue
+		return Int64(attributes["classPK"] as! Int)
 	}
 
 	public var groupId: Int64 {
-		return (attributes["groupId"] as! NSNumber).longLongValue
+		return Int64(attributes["groupId"] as! Int)
 	}
 
 	public var companyId: Int64 {
-		return (attributes["companyId"] as! NSNumber).longLongValue
+		return Int64(attributes["companyId"] as! Int)
 	}
 
 	public var entryId: Int64 {
-		return (attributes["entryId"] as! NSNumber).longLongValue
+		return Int64(attributes["entryId"] as! Int)
 	}
+
 
 	//MARK: Init
 
@@ -72,43 +73,33 @@ import UIKit
 @IBDesignable public class AssetListScreenlet: BaseListScreenlet {
 
 	@IBInspectable public var groupId: Int64 = 0
-	@IBInspectable public var classNameId: Int64 = 0
-	@IBInspectable public var portletItemName: String?
-	@IBInspectable public var offlinePolicy: String? = CacheStrategyType.RemoteFirst.rawValue
+	@IBInspectable public var classNameId: Int = 0
 
 	@IBOutlet public weak var delegate: AssetListScreenletDelegate?
-
-	public var customEntryQuery: [String:AnyObject]?
 
 
 	//MARK: BaseListScreenlet
 
 	override internal func createPageLoadInteractor(
-			#page: Int,
+			page page: Int,
 			computeRowCount: Bool)
 			-> BaseListPageLoadInteractor {
 
-		let interactor = AssetListPageLoadInteractor(
-			screenlet: self,
-			page: page,
-			computeRowCount: computeRowCount,
-			groupId: self.groupId,
-			classNameId: self.classNameId,
-			portletItemName: self.portletItemName)
-
-		interactor.cacheStrategy = CacheStrategyType(rawValue: self.offlinePolicy ?? "") ?? .RemoteFirst
-		interactor.customEntryQuery = self.customEntryQuery
-
-		return interactor
+		return AssetListPageLoadInteractor(
+				screenlet: self,
+				page: page,
+				computeRowCount: computeRowCount,
+				groupId: self.groupId,
+				classNameId: self.classNameId)
 	}
 
-	override internal func onLoadPageError(#page: Int, error: NSError) {
+	override internal func onLoadPageError(page page: Int, error: NSError) {
 		super.onLoadPageError(page: page, error: error)
 
 		delegate?.screenlet?(self, onAssetListError: error)
 	}
 
-	override internal func onLoadPageResult(#page: Int, rows: [AnyObject], rowCount: Int) {
+	override internal func onLoadPageResult(page page: Int, rows: [AnyObject], rowCount: Int) {
 		super.onLoadPageResult(page: page, rows: rows, rowCount: rowCount)
 
 		let assetEntries = rows as! [AssetListScreenletEntry]

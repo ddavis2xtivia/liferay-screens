@@ -16,45 +16,50 @@ import UIKit
 
 public class LiferayDDLFormRecordLoadOperation: ServerOperation {
 
-	public var recordId: Int64
+	public var recordId: Int64?
 
-	public var resultRecordData: [String:AnyObject]?
-	public var resultRecordAttributes: [String:AnyObject]?
+	public var resultRecord: [String:AnyObject]?
 	public var resultRecordId: Int64?
 
 
-	public init(recordId: Int64) {
-		self.recordId = recordId
-
-		super.init()
+	override public var hudLoadingMessage: HUDMessage? {
+		return (LocalizedString("ddlform-screenlet", key: "loading-record-message", obj: self),
+				details: LocalizedString("ddlform-screenlet", key: "loading-record-details", obj: self))
+	}
+	override public var hudFailureMessage: HUDMessage? {
+		return (LocalizedString("ddlform-screenlet", key: "loading-record-error", obj: self), details: nil)
 	}
 
 
 	//MARK: ServerOperation
 
-	override public func doRun(#session: LRSession) {
+	override func validateData() -> Bool {
+		var valid = super.validateData()
+
+		valid = valid && (recordId != nil)
+
+		return valid
+	}
+
+	override internal func doRun(session session: LRSession) {
 		let service = LRScreensddlrecordService_v62(session: session)
 
-		resultRecordData = nil
-		resultRecordAttributes = nil
+		resultRecord = nil
 		resultRecordId = nil
-		lastError = nil
 
-		let recordDic = service.getDdlRecordWithDdlRecordId(recordId,
-				locale: NSLocale.currentLocaleString,
-				error: &lastError)
+		let recordDictionary: [NSObject: AnyObject]!
+		do {
+			recordDictionary = try service.getDdlRecordWithDdlRecordId(recordId!,
+							locale: NSLocale.currentLocaleString)
+		} catch let error as NSError {
+			lastError = error
+			recordDictionary = nil
+		}
 
 		if lastError == nil {
-			if let resultData = recordDic["modelValues"] as? [String:AnyObject],
-					resultAttributes = recordDic["modelAttributes"] as? [String:AnyObject] {
-				resultRecordData = resultData
-				resultRecordAttributes = resultAttributes
-				resultRecordId = recordId
-			}
-			else if let resultData = recordDic as? [String:AnyObject] {
-				// backwards compat: plugins v1.1.0 and previous (pre LPS-58800)
-				resultRecordData = resultData
-				resultRecordId = recordId
+			if recordDictionary is [String:AnyObject] {
+				resultRecord = recordDictionary as? [String:AnyObject]
+				resultRecordId = self.recordId!
 			}
 			else {
 				lastError = NSError.errorWithCause(.InvalidServerResponse)

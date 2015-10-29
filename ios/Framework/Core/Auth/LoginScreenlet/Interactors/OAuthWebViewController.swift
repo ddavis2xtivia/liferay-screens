@@ -52,9 +52,8 @@ class OAuthWebViewController: UIViewController, UIWebViewDelegate {
 				bundle: bundle)
 	}
 
-	required init(coder aDecoder: NSCoder) {
+	required init?(coder aDecoder: NSCoder) {
 		URL = NSURL()
-
 		super.init(coder: aDecoder)
 	}
 

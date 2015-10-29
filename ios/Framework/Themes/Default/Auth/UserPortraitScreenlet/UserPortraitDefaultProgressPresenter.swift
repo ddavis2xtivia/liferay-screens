@@ -57,7 +57,7 @@ import Foundation
 				else {
 					self.spinner?.stopAnimating()
 				}
-			}
+			}()
 		}
 	}
 

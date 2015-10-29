@@ -14,7 +14,7 @@
 import UIKit
 
 
-public class DDLFormView: BaseScreenletView, DDLFormViewModel, UITextFieldDelegate {
+public class DDLFormView: BaseScreenletView, DDLFormViewModel {
 
 	//MARK: DDLFormViewModel
 
@@ -26,23 +26,38 @@ public class DDLFormView: BaseScreenletView, DDLFormViewModel, UITextFieldDelega
 		return (record == nil) ? true : record!.fields.isEmpty
 	}
 
+	public var values: [String:AnyObject] {
+		var result:[String:AnyObject] = [:]
+
+		forEachField() {
+			if let value = $0.currentValueAsString {
+				//FIXME - LPS-49460
+				// Server rejects the request if the value is empty string.
+				// This way we workaround the problem but a field can't be
+				// emptied when you're editing an existing row.
+				if value != "" {
+					result[$0.name] = value
+				}
+			}
+		}
+
+		return result
+	}
+
+
 	public func refresh() {
 	}
 
-	public func validateForm(#autoscroll: Bool) -> ValidationError? {
-		var firstError: ValidationError?
-		var firstFailedField: DDLField?
+	public func validateForm(autoscroll autoscroll: Bool) -> Bool {
+		var result = true
+		var firstFailedField:DDLField?
 
 		forEachField() {
 			if !$0.validate() {
 				if firstFailedField == nil {
 					firstFailedField = $0
 				}
-				if firstError == nil {
-					let fmt = LocalizedString("ddlform-screenlet", "validation-field", self)
-					let msg = NSString(format: fmt, $0.label).description
-					firstError = ValidationError(msg)
-				}
+				result = false
 			}
 		}
 
@@ -50,7 +65,7 @@ public class DDLFormView: BaseScreenletView, DDLFormViewModel, UITextFieldDelega
 			showField(firstFailedField!)
 		}
 
-		return firstError
+		return result
 	}
 
 
@@ -61,7 +76,7 @@ public class DDLFormView: BaseScreenletView, DDLFormViewModel, UITextFieldDelega
 	}
 
 	public func getFieldIndex(field: DDLField) -> Int? {
-		return (record == nil) ? nil : find(record!.fields, field)
+		return (record == nil) ? nil : record!.fields.indexOf(field)
 	}
 
 

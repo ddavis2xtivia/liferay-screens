@@ -135,7 +135,7 @@ public class DDLFieldTableCell: UITableViewCell {
 					}
 
 				case .Send:
-					formView?.userAction(name: DDLFormScreenlet.SubmitFormAction)
+					formView?.userAction(name: "submit-form")
 					result = true
 
 				default: ()
@@ -153,7 +153,7 @@ public class DDLFieldTableCell: UITableViewCell {
 	}
 
 	internal func moveSubviewsVertically(offsetY:CGFloat) {
-		for subview in contentView.subviews as! [UIView] {
+		for subview in contentView.subviews {
 			if offsetY == 0.0 {
 				subview.transform = CGAffineTransformIdentity
 			}

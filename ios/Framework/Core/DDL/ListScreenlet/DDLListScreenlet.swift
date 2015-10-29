@@ -39,8 +39,6 @@ import UIKit
 		}
 	}
 
-	@IBInspectable public var offlinePolicy: String? = CacheStrategyType.RemoteFirst.rawValue
-
 	@IBOutlet public weak var delegate: DDLListScreenletDelegate?
 
 	public var viewModel: DDLListViewModel {
@@ -57,29 +55,25 @@ import UIKit
 	}
 
 	override internal func createPageLoadInteractor(
-			#page: Int,
+			page page: Int,
 			computeRowCount: Bool)
 			-> BaseListPageLoadInteractor {
 
-		let interactor = DDLListPageLoadInteractor(
+		return DDLListPageLoadInteractor(
 				screenlet: self,
 				page: page,
 				computeRowCount: computeRowCount,
 				userId: self.userId,
 				recordSetId: self.recordSetId)
-
-		interactor.cacheStrategy = CacheStrategyType(rawValue: self.offlinePolicy ?? "") ?? .RemoteFirst
-
-		return interactor
 	}
 
-	override internal func onLoadPageError(#page: Int, error: NSError) {
+	override internal func onLoadPageError(page page: Int, error: NSError) {
 		super.onLoadPageError(page: page, error: error)
 
 		delegate?.screenlet?(self, onDDLListError: error)
 	}
 
-	override internal func onLoadPageResult(#page: Int, rows: [AnyObject], rowCount: Int) {
+	override internal func onLoadPageResult(page page: Int, rows: [AnyObject], rowCount: Int) {
 		super.onLoadPageResult(page: page, rows: rows, rowCount: rowCount)
 
 		delegate?.screenlet?(self,

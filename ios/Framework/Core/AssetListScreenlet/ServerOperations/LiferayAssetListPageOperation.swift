@@ -16,114 +16,60 @@ import UIKit
 public class LiferayAssetListPageOperation: LiferayPaginationOperation {
 
 	public var groupId: Int64?
-	public var classNameId: Int64?
-	public var portletItemName: String?
-	public var customEntryQuery: [String:AnyObject]?
+	public var classNameId: Int?
+
+	internal var assetListScreenlet: AssetListScreenlet {
+		return self.screenlet as! AssetListScreenlet
+	}
 
 
 	//MARK: ServerOperation
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override func validateData() -> Bool {
+		var valid = super.validateData()
 
-		if error == nil {
-			if groupId == nil {
-				return ValidationError("assetlist-screenlet", "undefined-group")
-			}
+		valid = valid && (groupId != nil)
+		valid = valid && (classNameId != nil)
 
-			if classNameId == nil && portletItemName == nil {
-				return ValidationError("assetlist-screenlet", "undefined-classname")
-			}
-		}
-
-		return error
+		return valid
 	}
 
-	override public func doRun(#session: LRSession) {
-		if let portletItemName = portletItemName {
-			let service = LRScreensassetentryService_v62(session: session)
-
-			if startRow == 0 {
-				// since the service doesn't support pagination, we ask for
-				// rows from the top to the endRow (whole single page)
-				let rowCount = endRow
-
-				let responses = service.getAssetEntriesWithCompanyId(LiferayServerContext.companyId,
-					groupId: groupId!,
-					portletItemName: portletItemName,
-					locale: NSLocale.currentLocaleString,
-					max: Int32(endRow),
-					error: &lastError)
-
-				if lastError == nil {
-					if let entriesResponse = responses as? [[String:AnyObject]] {
-						let serverPageContent = entriesResponse
-
-						resultPageContent = serverPageContent
-						resultRowCount = serverPageContent.count
-					}
-					else {
-						lastError = NSError.errorWithCause(.InvalidServerResponse, userInfo: nil)
-					}
-				}
-			}
-			else {
-				// return empty content for pages different from the first one
-				resultPageContent = []
-				resultRowCount = 0
-			}
-		}
-		else {
-			super.doRun(session: session)
-		}
-	}
 
 	//MARK: LiferayPaginationOperation
 
-	override internal func doGetPageRowsOperation(#session: LRBatchSession, startRow: Int, endRow: Int) {
-		let service = LRScreensassetentryService_v62(session: session)
+	override internal func doGetPageRowsOperation(session session: LRBatchSession, page: Int) {
+		let screenletsService = LRScreensassetentryService_v62(session: session)
 
-		var entryQuery = configureEntryQuery()
+		var entryQueryAttributes = configureEntryQueryAttributes()
 
-		entryQuery["start"] = startRow
-		entryQuery["end"] = endRow
+		entryQueryAttributes["start"] = assetListScreenlet.firstRowForPage(page)
+		entryQueryAttributes["end"] = assetListScreenlet.firstRowForPage(page + 1)
 
-		let entryQueryWrapper = LRJSONObjectWrapper(JSONObject: entryQuery)
+		let entryQuery = LRJSONObjectWrapper(JSONObject: entryQueryAttributes)
 
-		service.getAssetEntriesWithAssetEntryQuery(entryQueryWrapper,
-			locale: NSLocale.currentLocaleString,
-			error: nil)
+		try? screenletsService.getAssetEntriesWithAssetEntryQuery(entryQuery,
+				locale: NSLocale.currentLocaleString)
 	}
 
-	override internal func doGetRowCountOperation(#session: LRBatchSession) {
-		let service = LRAssetEntryService_v62(session: session)
-		let entryQuery = configureEntryQuery()
-		let entryQueryWrapper = LRJSONObjectWrapper(JSONObject: entryQuery)
+	override internal func doGetRowCountOperation(session session: LRBatchSession) {
+		let assetsService = LRAssetEntryService_v62(session: session)
+		let entryQueryAttributes = configureEntryQueryAttributes()
+		let entryQuery = LRJSONObjectWrapper(JSONObject: entryQueryAttributes)
 
-		service.getEntriesCountWithEntryQuery(entryQueryWrapper, error: nil)
+		try? assetsService.getEntriesCountWithEntryQuery(entryQuery)
 	}
 
 
 	//MARK: Private methods
 
-	private func configureEntryQuery() -> [String:AnyObject] {
-		var entryQuery = (customEntryQuery != nil)
-			? customEntryQuery!
-			: [String:AnyObject]()
+	private func configureEntryQueryAttributes() -> [NSString : AnyObject] {
+		var entryQueryAttributes: [NSString : AnyObject] = [:]
 
-		let defaultValues = [
-			"classNameIds" : NSNumber(longLong: classNameId!),
-			"groupIds" : NSNumber(longLong: groupId!),
-			"visible" : "true"
-		]
+		entryQueryAttributes["classNameIds"] = NSNumber(long: classNameId!)
+		entryQueryAttributes["groupIds"] = NSNumber(longLong: groupId!)
+		entryQueryAttributes["visible"] = "true"
 
-		for (k,v) in defaultValues {
-			if entryQuery[k] == nil {
-				entryQuery[k] = v
-			}
-		}
-
-		return entryQuery
+		return entryQueryAttributes
 	}
 
 }

@@ -25,13 +25,6 @@ public class LoginView_default: BaseScreenletView, LoginViewModel {
 	@IBOutlet public weak var passwordBackground: UIImageView!
 	@IBOutlet public weak var authorizeButton: UIButton!
 
-	override public var progressMessages: [String:ProgressMessages] {
-		return [
-			BaseScreenlet.DefaultAction :
-				[.Working : LocalizedString("default", "login-loading-message", self),
-				.Failure : LocalizedString("default", "login-loading-error", self)]]
-	}
-
 
 	//MARK: AuthBasedViewModel
 
@@ -67,6 +60,7 @@ public class LoginView_default: BaseScreenletView, LoginViewModel {
 	}
 
 
+
 	//MARK: LoginViewModel
 
 	public var userName: String? {
@@ -96,34 +90,29 @@ public class LoginView_default: BaseScreenletView, LoginViewModel {
 		setButtonDefaultStyle(loginButton)
 		setButtonDefaultStyle(authorizeButton)
 
+		BaseScreenlet.setHUDCustomColor(DefaultThemeBasicBlue)
+
 		configureAuthType()
 	}
 
 	override public func onSetTranslations() {
-		userNameField?.placeholder = LocalizedString("default",
-			BasicAuthMethod.create(basicAuthMethod).description, self)
+		passwordField?.placeholder = LocalizedString("default", key: "password-placeholder", obj: self)
 
-		passwordField?.placeholder = LocalizedString("default", "password-placeholder", self)
-
-		loginButton?.replaceAttributedTitle(LocalizedString("default", "signin-button", self),
+		loginButton?.replaceAttributedTitle(LocalizedString("default", key: "sign-in-button", obj: self),
 				forState: .Normal)
 
-		authorizeButton?.replaceAttributedTitle(LocalizedString("default", "authorize-button", self),
+		authorizeButton?.replaceAttributedTitle(LocalizedString("default", key: "authorize-button", obj: self),
 				forState: .Normal)
 	}
 
-	override public func onStartInteraction() {
+	override public func onStartOperation() {
 		loginButton?.enabled = false
 		authorizeButton?.enabled = false
 	}
 
-	override public func onFinishInteraction(result: AnyObject?, error: NSError?) {
+	override public func onFinishOperation() {
 		loginButton?.enabled = true
 		authorizeButton?.enabled = true
-	}
-
-	override public func createProgressPresenter() -> ProgressPresenter {
-		return DefaultProgressPresenter()
 	}
 
 

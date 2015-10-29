@@ -48,7 +48,7 @@ public func when(str: String, code: Void -> Void) {
 }
 
 public func then(str: String, code: Void -> Void) {
-	then(str, code, .TestNow)
+	then(str, code: code, action: .TestNow)
 }
 
 public func then(str: String, code: Void -> Void, action: Action) {
@@ -124,9 +124,9 @@ public func eventually(str: String, code: AnyObject? -> Void, action: Action) {
 
 			lastDoneEvent = nil
 		default:
-			then(str, {
+			then(str, code: {
 				code(nil)
-			}, action)
+			}, action: action)
 	}
 }
 
@@ -144,30 +144,30 @@ public func scenario(scenario: String, code:Void->Void) {
 }
 
 public func with(text: String, code: Void -> Void) {
-	withSugar("with", text, level: 1, code)
+	withSugar("with", text: text, level: 1, code: code)
 }
 
 public func that(text: String, code: Void -> Void) {
-	withSugar("that", text, level: 1, code)
+	withSugar("that", text: text, level: 1, code: code)
 }
 
 public func and(text: String, code: Void -> Void) {
-	withSugar("and", text, level: 1, code)
+	withSugar("and", text: text, level: 1, code: code)
 }
 
 public func but(text: String, code: Void -> Void) {
-	withSugar("but", text, level: 1, code)
+	withSugar("but", text: text, level: 1, code: code)
 }
 
 public func it(text: String, code: Void -> Void) {
-	withSugar("it", text, level: 1, code)
+	withSugar("it", text: text, level: 1, code: code)
 }
 
 public func perform(text: String, code: Void -> Void) {
-	withSugar("perform", text, level: 1, code)
+	withSugar("perform", text: text, level: 1, code: code)
 }
 
-private func withSugar(sugar: String, text: String, #level: Int, code: Void -> Void) {
+private func withSugar(sugar: String, text: String, level: Int, code: Void -> Void) {
 	doPrint("\(indentation(currentIndentationLevel + level))\(currentIcons().secondLevel) \(sugar) \(text)")
 	code()
 }

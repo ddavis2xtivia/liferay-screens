@@ -22,7 +22,9 @@ import UIKit
 
 	var isRecordEmpty: Bool { get }
 
+	var values: [String:AnyObject] { get }
 
-	func validateForm(#autoscroll: Bool) -> ValidationError?
+
+	func validateForm(autoscroll autoscroll: Bool) -> Bool
 
 }

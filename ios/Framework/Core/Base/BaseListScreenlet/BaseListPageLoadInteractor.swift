@@ -14,28 +14,32 @@
 import UIKit
 
 
-public class BaseListPageLoadInteractor: ServerReadOperationInteractor {
+class BaseListPageLoadInteractor: ServerOperationInteractor {
 
-	public let page: Int
-	public let computeRowCount: Bool
+	let page: Int
+	let computeRowCount: Bool
 
-	public var resultAllPagesContent: [AnyObject?]?
-	public var resultPageContent: [AnyObject]?
-	public var resultRowCount: Int?
+	var resultAllPagesContent: [AnyObject?]?
+	var resultPageContent: [AnyObject]?
+	var resultRowCount: Int?
 
-
-	public init(screenlet: BaseListScreenlet, page: Int, computeRowCount: Bool) {
+	init(screenlet: BaseListScreenlet, page: Int, computeRowCount: Bool) {
 		self.page = page
 		self.computeRowCount = computeRowCount
 
 		super.init(screenlet: screenlet)
 	}
 
-	override public func createOperation() -> LiferayPaginationOperation {
-		fatalError("createOperation must be overriden")
+	override func createOperation() -> LiferayPaginationOperation {
+		assertionFailure("createOperation must be overriden")
+
+		return LiferayPaginationOperation(
+				screenlet: self.screenlet,
+				page: self.page,
+				computeRowCount: self.computeRowCount)
 	}
 
-	override public func completedOperation(op: ServerOperation) {
+	override func completedOperation(op: ServerOperation) {
 		if op.lastError != nil {
 			return
 		}
@@ -45,7 +49,7 @@ public class BaseListPageLoadInteractor: ServerReadOperationInteractor {
 		}
 	}
 
-	private func processLoadPageResult(serverRows: [[String:AnyObject]], rowCount: Int?) {
+	func processLoadPageResult(serverRows: [[String:AnyObject]], rowCount: Int?) {
 		let screenlet = self.screenlet as! BaseListScreenlet
 		let baseListView = screenlet.screenletView as! BaseListView
 
@@ -55,7 +59,7 @@ public class BaseListPageLoadInteractor: ServerReadOperationInteractor {
 
 		var allRows = Array<AnyObject?>(count: actualRowCount, repeatedValue: nil)
 
-		for (index, row) in enumerate(baseListView.rows) {
+		for (index, row) in baseListView.rows.enumerate() {
 			allRows[index] = row
 		}
 
@@ -66,7 +70,7 @@ public class BaseListPageLoadInteractor: ServerReadOperationInteractor {
 			offset = actualRowCount - 1
 		}
 
-		for (index, row) in enumerate(convertedRows) {
+		for (index, row) in convertedRows.enumerate() {
 			allRows[offset + index] = row
 		}
 
@@ -75,55 +79,9 @@ public class BaseListPageLoadInteractor: ServerReadOperationInteractor {
 		self.resultAllPagesContent = allRows
 	}
 
-	public func convertResult(serverResult: [String:AnyObject]) -> AnyObject {
-		fatalError("convert(serverResult) must be overriden")
-	}
-
-
-	//MARK: Cache
-
-	override public func readFromCache(op: ServerOperation, result: AnyObject? -> Void) {
-		if let loadOp = op as? LiferayPaginationOperation {
-			let key = cacheKey(loadOp)
-			SessionContext.currentCacheManager!.getSome(
-					collection: ScreenletName(screenlet!.dynamicType),
-					keys: ["\(key)-\(page)", "\(key)-\(page)-count"]) {
-
-				loadOp.resultPageContent = $0.first as? [[String:AnyObject]]
-				if count($0) > 1 {
-					loadOp.resultRowCount = $0.last as? Int
-				}
-
-				result(loadOp.resultPageContent)
-			}
-		}
-	}
-
-	override public func writeToCache(op: ServerOperation) {
-		if let loadOp = op as? LiferayPaginationOperation,
-				pageContent = loadOp.resultPageContent
-				where !pageContent.isEmpty {
-
-			let key = cacheKey(loadOp)
-
-			SessionContext.currentCacheManager?.setClean(
-				collection: ScreenletName(screenlet!.dynamicType),
-				key: "\(key)-\(page)",
-				value: pageContent,
-				attributes: [:])
-
-			if let rowCount = loadOp.resultRowCount {
-				SessionContext.currentCacheManager?.setClean(
-					collection: ScreenletName(screenlet!.dynamicType),
-					key: "\(key)-\(page)-count",
-					value: rowCount,
-					attributes: [:])
-			}
-		}
-	}
-
-	public func cacheKey(op: LiferayPaginationOperation) -> String {
-		fatalError("cacheKey must be overriden")
+	func convertResult(serverResult: [String:AnyObject]) -> AnyObject {
+		assertionFailure("convert(serverResult) must be overriden")
+		return 0
 	}
 
 }

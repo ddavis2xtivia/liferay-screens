@@ -16,41 +16,35 @@ import UIKit
 
 public class GetUserByEmailOperation: GetUserBaseOperation {
 
-	public var companyId: Int64
-	public var emailAddress: String
+	private var companyId: Int64
+	private var emailAddress: String?
 
-	public init(companyId: Int64, emailAddress: String) {
+	public init(screenlet: BaseScreenlet, companyId: Int64, emailAddress:String?) {
 		self.companyId = companyId
 		self.emailAddress = emailAddress
 
-		super.init()
+		super.init(screenlet: screenlet)
 	}
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override internal func validateData() -> Bool {
+		var valid = super.validateData()
 
-		if error == nil {
-			if emailAddress == "" {
-				return ValidationError("login-screenlet", "validation-email")
-			}
-		}
+		valid = valid && ((emailAddress ?? "") != "")
 
-		return error
+		return valid
 	}
 
 
 	//MARK: LiferayLoginBaseOperation
 
 	override internal func sendGetUserRequest(
-			#service: LRUserService_v62,
-			error: NSErrorPointer)
-			-> NSDictionary? {
+			service service: LRUserService_v62) throws
+			-> NSDictionary {
 
 		let companyId = (self.companyId != 0) ? self.companyId : LiferayServerContext.companyId
 
-		return service.getUserByEmailAddressWithCompanyId(companyId,
-				emailAddress: emailAddress,
-				error: error)
+		return try service.getUserByEmailAddressWithCompanyId(companyId,
+				emailAddress: emailAddress)
 	}
 
 }

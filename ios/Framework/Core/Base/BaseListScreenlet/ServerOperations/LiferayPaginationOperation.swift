@@ -16,33 +16,45 @@ import UIKit
 
 public class LiferayPaginationOperation: ServerOperation {
 
-	public let startRow: Int
-	public let endRow: Int
-	public let computeRowCount: Bool
+	public let page: Int
 
 	public var resultPageContent: [[String:AnyObject]]?
 	public var resultRowCount: Int?
 
+	override public var hudLoadingMessage: HUDMessage? {
+		return (page == 0)
+				? (LocalizedString("core", key: "base-list-loading-message", obj: self),
+						details: LocalizedString("core", key: "base-list-loading-details", obj: self))
+				: nil
+	}
+	override public var hudFailureMessage: HUDMessage? {
+		return (page == 0) 
+				? (LocalizedString("core", key: "base-list-loading-error", obj: self), details: nil)
+				: nil
+	}
 
-	internal init(startRow: Int, endRow: Int, computeRowCount: Bool) {
-		self.startRow = startRow
-		self.endRow = endRow
+
+	private var computeRowCount: Bool
+	
+
+	internal init(screenlet: BaseScreenlet, page: Int, computeRowCount: Bool) {
+		self.page = page
 		self.computeRowCount = computeRowCount
 
-		super.init()
+		super.init(screenlet: screenlet)
 	}
 
 
 	//MARK: ServerOperation
 
-	override public func doRun(#session: LRSession) {
+	override internal func doRun(session session: LRSession) {
 		let batchSession = LRBatchSession(session: session)
 
 		resultPageContent = nil
 		resultRowCount = nil
 		lastError = nil
 
-		doGetPageRowsOperation(session: batchSession, startRow: startRow, endRow: endRow)
+		doGetPageRowsOperation(session: batchSession, page: page)
 
 		if batchSession.commands.count < 1 {
 			lastError = NSError.errorWithCause(.AbortedDueToPreconditions, userInfo: nil)
@@ -53,7 +65,13 @@ public class LiferayPaginationOperation: ServerOperation {
 			doGetRowCountOperation(session: batchSession)
 		}
 
-		let responses = batchSession.invoke(&lastError)
+		let responses: [AnyObject]!
+		do {
+			responses = try batchSession.invoke()
+		} catch let error as NSError {
+			lastError = error
+			responses = nil
+		}
 
 		if lastError == nil {
 			if let entriesResponse = responses[0] as? [[String:AnyObject]] {
@@ -75,12 +93,12 @@ public class LiferayPaginationOperation: ServerOperation {
 		}
 	}
 
-	internal func doGetPageRowsOperation(#session: LRBatchSession, startRow: Int, endRow: Int) {
-		fatalError("doGetPageRowsOperation must be overriden")
+	internal func doGetPageRowsOperation(session session: LRBatchSession, page: Int) {
+		assertionFailure("doGetPageRowsOperation must be overriden")
 	}
 
-	internal func doGetRowCountOperation(#session: LRBatchSession) {
-		fatalError("doGetRowCountOperation must be overriden")
+	internal func doGetRowCountOperation(session session: LRBatchSession) {
+		assertionFailure("doGetRowCountOperation must be overriden")
 	}
 
 }

@@ -29,36 +29,27 @@ public class LiferayDDLFormUploadOperation: ServerOperation, LRCallback, LRProgr
 
 	var uploadResult: [String:AnyObject]?
 
+	override public var hudFailureMessage: HUDMessage? {
+		return (LocalizedString("ddlform-screenlet", key: "uploading-error", obj: self), details: nil)
+	}
+
 	private var requestSemaphore: dispatch_semaphore_t?
 
 
 	//MARK: ServerOperation
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override func validateData() -> Bool {
+		var valid = super.validateData()
 
-		if error == nil {
-			if document?.currentValue == nil {
-				return ValidationError("ddlform-screenlet", "undefined-current-value")
-			}
+		valid = valid && (document != nil && document?.currentValue != nil)
+		valid = valid && (filePrefix != nil)
+		valid = valid && (repositoryId != nil)
+		valid = valid && (folderId != nil)
 
-			if (filePrefix ?? "") == "" {
-				return ValidationError("ddlform-screenlet", "undefined-fileprefix")
-			}
-
-			if repositoryId == nil {
-				return ValidationError("ddlform-screenlet", "undefined-repository")
-			}
-
-			if folderId == nil {
-				return ValidationError("ddlform-screenlet", "undefined-folder")
-			}
-		}
-
-		return error
+		return valid
 	}
 
-	override public func doRun(#session: LRSession) {
+	override internal func doRun(session session: LRSession) {
 		session.callback = self
 
 		let fileName = "\(filePrefix!)\(NSUUID().UUIDString)"
@@ -75,16 +66,19 @@ public class LiferayDDLFormUploadOperation: ServerOperation, LRCallback, LRProgr
 
 		requestSemaphore = dispatch_semaphore_create(0)
 
-		service.addFileEntryWithRepositoryId(repositoryId!,
-				folderId: folderId!,
-				sourceFileName: fileName,
-				mimeType: document!.mimeType,
-				title: fileName,
-				description: LocalizedString("ddlform-screenlet", "upload-metadata-description", self),
-				changeLog: LocalizedString("ddlform-screenlet", "upload-metadata-changelog", self),
-				file: uploadData,
-				serviceContext: nil,
-				error: &lastError)
+		do {
+			try service.addFileEntryWithRepositoryId(repositoryId!,
+					folderId: folderId!,
+					sourceFileName: fileName,
+					mimeType: document!.mimeType,
+					title: fileName,
+					description: LocalizedString("ddlform-screenlet", key: "upload-metadata-description", obj: self),
+					changeLog: LocalizedString("ddlform-screenlet", key: "upload-metadata-changelog", obj: self),
+					file: uploadData,
+					serviceContext: nil)
+		} catch let error as NSError {
+			lastError = error
+		}
 
 		dispatch_semaphore_wait(requestSemaphore!, DISPATCH_TIME_FOREVER)
 	}

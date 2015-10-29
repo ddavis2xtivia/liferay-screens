@@ -16,35 +16,30 @@ import UIKit
 
 public class GetUserByUserIdOperation: GetUserBaseOperation {
 
-	public let userId: Int64
+	private var userId: Int64?
 
-	public init(userId: Int64) {
+	public init(screenlet: BaseScreenlet, userId: Int64?) {
 		self.userId = userId
 
-		super.init()
+		super.init(screenlet: screenlet)
 	}
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override internal func validateData() -> Bool {
+		var valid = super.validateData()
 
-		if error == nil {
-			if userId == 0 {
-				return ValidationError("login-screenlet", "undefined-user")
-			}
-		}
+		valid = valid && ((userId ?? 0) > 0)
 
-		return error
+		return valid
 	}
 
 
 	//MARK: LiferayLoginBaseOperation
 
 	override internal func sendGetUserRequest(
-			#service: LRUserService_v62,
-			error: NSErrorPointer)
-			-> NSDictionary? {
+			service service: LRUserService_v62) throws
+			-> NSDictionary {
 
-		return service.getUserByIdWithUserId(userId, error: error)
+		return try service.getUserByIdWithUserId(userId!)
 	}
 
 }

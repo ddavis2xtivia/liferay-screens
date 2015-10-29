@@ -50,7 +50,7 @@ extension SyncManager {
 					onItemSyncScreenlet: ScreenletName(DDLFormScreenlet),
 					completedKey: key, attributes: attributes)
 				signal()
-			}
+			}()
 		}
 
 		return key.hasPrefix("document-") ? documentSynchronizer : recordSynchronizer
@@ -65,7 +65,7 @@ extension SyncManager {
 		precondition(localRecord.recordId != nil, "RecordId must be defined")
 
 		// updating record: check consistency first
-		loadRecord(localRecord.recordId!) { remoteRecord in
+		loadRecord(localRecord.recordId) { remoteRecord in
 
 			if remoteRecord == nil {
 				self.delegate?.syncManager?(self,
@@ -106,7 +106,7 @@ extension SyncManager {
 	}
 
 	private func resolveConflict(
-			#remoteRecord: DDLRecord,
+			remoteRecord remoteRecord: DDLRecord,
 			localRecord: DDLRecord,
 			key: String,
 			attributes: [String:AnyObject],
@@ -157,7 +157,7 @@ extension SyncManager {
 	}
 
 	private func loadRecord(recordId: Int64, result: DDLRecord? -> ()) {
-		let op = LiferayDDLFormRecordLoadOperation(recordId: recordId)
+		let op = LiferayDDLFormRecordLoadOperation(screenlet: recordId)
 
 		op.validateAndEnqueue {
 			if let op = $0 as? LiferayDDLFormRecordLoadOperation,
@@ -233,7 +233,7 @@ extension SyncManager {
 					error: NSError.errorWithCause(.ValidationFailed))
 
 				signal()
-			}
+			}()
 		}
 	}
 

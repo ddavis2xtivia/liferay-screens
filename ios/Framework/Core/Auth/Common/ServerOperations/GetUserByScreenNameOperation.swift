@@ -16,40 +16,34 @@ import UIKit
 
 public class GetUserByScreenNameOperation: GetUserBaseOperation {
 
-	public var companyId: Int64
-	public var screenName: String
+	private var companyId: Int64
+	private var screenName: String?
 
-	public init(companyId: Int64, screenName: String) {
+	public init(screenlet: BaseScreenlet, companyId: Int64, screenName: String?) {
 		self.companyId = companyId
 		self.screenName = screenName
 
-		super.init()
+		super.init(screenlet: screenlet)
 	}
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override internal func validateData() -> Bool {
+		var valid = super.validateData()
 
-		if error == nil {
-			if screenName == "" {
-				return ValidationError("login-screenlet", "validation-screenname")
-			}
-		}
+		valid = valid && ((screenName ?? "") != "")
 
-		return error
+		return valid
 	}
 
 	//MARK: LiferayLoginBaseOperation
 
 	override internal func sendGetUserRequest(
-			#service: LRUserService_v62,
-			error: NSErrorPointer)
-			-> NSDictionary? {
+			service service: LRUserService_v62) throws
+			-> NSDictionary {
 
 		let companyId = (self.companyId != 0) ? self.companyId : LiferayServerContext.companyId
 
-		return service.getUserByScreenNameWithCompanyId(companyId,
-				screenName: screenName,
-				error: error)
+		return try service.getUserByScreenNameWithCompanyId(companyId,
+				screenName: screenName)
 	}
 
 }

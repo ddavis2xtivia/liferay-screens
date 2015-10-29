@@ -22,28 +22,37 @@ public class LiferayDDLFormLoadOperation: ServerOperation {
 	public var resultUserId: Int64?
 
 
-	//MARK: ServerOperation
-
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
-
-		if error == nil {
-			if structureId == nil {
-				return ValidationError("ddlform-screenlet", "undefined-structure")
-			}
-		}
-
-		return error
+	override public var hudLoadingMessage: HUDMessage? {
+		return (LocalizedString("ddlform-screenlet", key: "loading-message", obj: self),
+				details: LocalizedString("ddlform-screenlet", key: "loading-details", obj: self))
+	}
+	override public var hudFailureMessage: HUDMessage? {
+		return (LocalizedString("ddlform-screenlet", key: "loading-error", obj: self), details: nil)
 	}
 
-	override public func doRun(#session: LRSession) {
+	//MARK: ServerOperation
+
+	override func validateData() -> Bool {
+		var valid = super.validateData()
+
+		valid = valid && (structureId != nil)
+
+		return valid
+	}
+
+	override internal func doRun(session session: LRSession) {
 		let service = LRDDMStructureService_v62(session: session)
 
 		resultRecord = nil
 		resultUserId = nil
 
-		let structureDataDictionary = service.getStructureWithStructureId(structureId!,
-				error: &lastError)
+		let structureDataDictionary: [NSObject: AnyObject]!
+		do {
+			structureDataDictionary = try service.getStructureWithStructureId(structureId!)
+		} catch let error as NSError {
+			lastError = error
+			structureDataDictionary = nil
+		}
 
 		if lastError == nil {
 			if let xsd = structureDataDictionary["xsd"]! as? String {

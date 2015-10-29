@@ -14,13 +14,12 @@
 import UIKit
 
 
-public class DDLListPageLoadInteractor : BaseListPageLoadInteractor {
+class DDLListPageLoadInteractor : BaseListPageLoadInteractor {
 
-	public let userId: Int64
-	public let recordSetId: Int64
+	let userId: Int64
+	let recordSetId: Int64
 
-	public init(
-			screenlet: BaseListScreenlet,
+	init(screenlet: BaseListScreenlet,
 			page: Int,
 			computeRowCount: Bool,
 			userId: Int64,
@@ -32,14 +31,10 @@ public class DDLListPageLoadInteractor : BaseListPageLoadInteractor {
 		super.init(screenlet: screenlet, page: page, computeRowCount: computeRowCount)
 	}
 
-	override public func createOperation() -> LiferayDDLListPageOperation {
-		let viewModel = (self.screenlet as! DDLListScreenlet).screenletView as! DDLListViewModel
-		let pager = (self.screenlet as! BaseListScreenlet).firstRowForPage
-
+	override func createOperation() -> LiferayDDLListPageOperation {
 		let operation = LiferayDDLListPageOperation(
-				viewModel: viewModel,
-				startRow: pager(self.page),
-				endRow: pager(self.page + 1),
+				screenlet: self.screenlet,
+				page: self.page,
 				computeRowCount: self.computeRowCount)
 
 		operation.userId = (self.userId != 0) ? self.userId : nil
@@ -48,12 +43,8 @@ public class DDLListPageLoadInteractor : BaseListPageLoadInteractor {
 		return operation;
 	}
 
-	override public func convertResult(serverResult: [String:AnyObject]) -> AnyObject {
-		return DDLRecord(dataAndAttributes: serverResult)
-	}
-
-	override public func cacheKey(op: LiferayPaginationOperation) -> String {
-		return "\(recordSetId)"
+	override func convertResult(serverResult: [String:AnyObject]) -> AnyObject {
+		return DDLRecord(recordData: serverResult)
 	}
 
 }

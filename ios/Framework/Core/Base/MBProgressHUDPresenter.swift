@@ -41,7 +41,7 @@ import Foundation
 		dispatch_main {
 			self.instance!.hide(true)
 			self.instance = nil
-		}
+		}()
 	}
 
 	public func showHUDInView(view: UIView,
@@ -58,7 +58,7 @@ import Foundation
 				message: message,
 				closeMode: closeMode,
 				spinnerMode: spinnerMode)
-		}
+		}()
 	}
 
 

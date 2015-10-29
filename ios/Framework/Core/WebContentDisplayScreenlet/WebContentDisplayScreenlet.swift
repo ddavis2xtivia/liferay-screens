@@ -28,14 +28,8 @@ import UIKit
 @IBDesignable public class WebContentDisplayScreenlet: BaseScreenlet {
 
 	@IBInspectable public var groupId: Int64 = 0
-
-	// use either articleId or classPK
 	@IBInspectable public var articleId: String = ""
-	@IBInspectable public var classPK: Int64 = 0
-
 	@IBInspectable public var autoLoad: Bool = true
-	@IBInspectable public var templateId: Int64 = 0
-	@IBInspectable public var offlinePolicy: String? = CacheStrategyType.RemoteFirst.rawValue
 
 	@IBOutlet public weak var delegate: WebContentDisplayScreenletDelegate?
 
@@ -43,15 +37,13 @@ import UIKit
 	//MARK: Public methods
 
 	override public func onShow() {
-		if autoLoad && (articleId != "" || classPK != 0) {
+		if autoLoad && articleId != "" {
 			loadWebContent()
 		}
 	}
 
-	override public func createInteractor(#name: String, sender: AnyObject?) -> Interactor? {
+	override public func createInteractor(name name: String?, sender: AnyObject?) -> Interactor? {
 		let interactor = WebContentDisplayLoadInteractor(screenlet: self)
-
-		interactor.cacheStrategy = CacheStrategyType(rawValue: self.offlinePolicy ?? "") ?? .RemoteFirst
 
 		interactor.onSuccess = {
 			let modifiedHtml = self.delegate?.screenlet?(self,
@@ -63,6 +55,7 @@ import UIKit
 
 		interactor.onFailure = {
 			self.delegate?.screenlet?(self, onWebContentError: $0)
+			return
 		}
 
 		return interactor

@@ -22,23 +22,18 @@ public class GetUserBaseOperation: ServerOperation {
 
 	//MARK: ServerOperation
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override internal func validateData() -> Bool {
+		var valid = super.validateData()
 		
 		if !SessionContext.hasSession {
-			if userName == nil {
-				return ValidationError("login-screenlet", "undefined-username")
-			}
-
-			if password == nil {
-				return ValidationError("login-screenlet", "undefined-password")
-			}
+			valid = valid && (userName != nil)
+			valid = valid && (password != nil)
 		}
 
-		return error
+		return valid
 	}
 
-	override public func createSession() -> LRSession? {
+	override func createSession() -> LRSession? {
 		if SessionContext.hasSession {
 			return SessionContext.createSessionFromCurrentSession()
 		}
@@ -50,14 +45,19 @@ public class GetUserBaseOperation: ServerOperation {
 						password: password!))
 	}
 
-	override public func doRun(#session: LRSession) {
+	override internal func doRun(session session: LRSession) {
 		var outError: NSError?
 
 		resultUserAttributes = nil
 
-		let result = sendGetUserRequest(
-				service: LRUserService_v62(session: session),
-				error: &outError)
+		let result: NSDictionary?
+		do {
+			result = try sendGetUserRequest(
+							service: LRUserService_v62(session: session))
+		} catch let error as NSError {
+			outError = error
+			result = nil
+		}
 
 		if outError != nil {
 			lastError = outError
@@ -90,11 +90,13 @@ public class GetUserBaseOperation: ServerOperation {
 	// MARK: Template methods
 
 	internal func sendGetUserRequest(
-			#service: LRUserService_v62,
-			error: NSErrorPointer)
-			-> NSDictionary? {
+			service service: LRUserService_v62) throws
+			-> NSDictionary {
+		let error: NSError! = NSError(domain: "Migrator", code: 0, userInfo: nil)
 
-		fatalError("sendGetUserRequest must be overriden")
+		assertionFailure("sendGetUserRequest must be overriden")
+
+		throw error
 	}
 
    

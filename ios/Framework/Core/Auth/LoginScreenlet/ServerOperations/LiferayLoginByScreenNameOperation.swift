@@ -16,15 +16,25 @@ import UIKit
 
 public class LiferayLoginByScreenNameOperation: GetUserByScreenNameOperation {
 
-	override public func validateData() -> ValidationError? {
-		if super.validateData() == nil {
-			return nil
-		}
-
-		return ValidationError("login-screenlet", "validation")
+	override public var hudLoadingMessage: HUDMessage? {
+		return (LocalizedString("login-screenlet", key: "loading-message", obj: self),
+				details: LocalizedString("login-screenlet", key: "loading-details", obj: self))
+	}
+	override public var hudFailureMessage: HUDMessage? {
+		return (LocalizedString("login-screenlet", key: "loading-error", obj: self), details: nil)
 	}
 
-	override public func postRun() {
+	override internal func validateData() -> Bool {
+		let valid = super.validateData()
+
+		if !valid {
+			showValidationHUD(message: LocalizedString("login-screenlet", key: "validation", obj: self))
+		}
+
+		return valid
+	}
+
+	override internal func postRun() {
 		if lastError == nil {
 			setResultAsSessionContext()
 		}

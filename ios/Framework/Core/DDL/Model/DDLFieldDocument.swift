@@ -22,26 +22,20 @@ public class DDLFieldDocument : DDLField {
 		case Uploading(UInt,UInt)
 		case Pending
 
-		public static func CachedStatusData(cacheKey: String) -> [String:AnyObject] {
-			return [
-				"cached": cacheKey,
-				"mimeType": "image/png"]
-		}
-
 		public var hashValue: Int {
-			return toInt()
+		    return toInt()
 		}
 
 		private func toInt() -> Int {
 			switch self {
-			case .Uploaded(_):
-				return 1
-			case .Failed(_):
-				return 2
-			case .Uploading(_,_):
-				return 3
-			case .Pending:
-				return 4
+				case .Uploaded(_):
+    		        return Int.max
+        		case .Failed(_):
+					return Int.min
+				case .Uploading(_,_):
+					return 1
+				default:
+					return 0
 			}
 		}
 
@@ -51,103 +45,39 @@ public class DDLFieldDocument : DDLField {
 	public var uploadStatus = UploadStatus.Pending
 
 	public var mimeType: String? {
-		if cachedKey != nil {
-			switch uploadStatus {
-			case .Uploaded(let json):
-				return json["mimeType"] as? String
-			default: ()
-			}
-		}
-
 		switch currentValue {
-		case is UIImage:
-			return "image/png"
-		case is NSURL:
-			return "video/mpeg"
-		case is [String:AnyObject]:
-			return nil
-		default:
-			return nil
+			case is UIImage:
+				return "image/png"
+			case is NSURL:
+				return "video/mpeg"
+			case is [String:AnyObject]:
+				return nil
+			default:
+				return nil
 		}
-	}
-
-	public var cachedKey: String? {
-		switch uploadStatus {
-		case .Uploaded(let json):
-			return json["cached"] as? String
-		default: ()
-		}
-
-		return nil
 	}
 
 
 	//MARK: DDLField
-
-	public override init(attributes: [String:AnyObject], locale: NSLocale) {
-		super.init(attributes: attributes, locale: locale)
-	}
-
-	public required init(coder aDecoder: NSCoder) {
-		let uploadStatusHash = aDecoder.decodeIntegerForKey("uploadStatusHash")
-
-		switch uploadStatusHash {
-		case UploadStatus.Uploaded([:]).hashValue:
-			let attributes = aDecoder.decodeObjectForKey("uploadStatusUploadedAttributes") as!  [String:AnyObject]
-			uploadStatus = .Uploaded(attributes)
-
-		case UploadStatus.Failed(nil).hashValue:
-			let err = aDecoder.decodeObjectForKey("uploadStatusFailedError") as! NSError
-			uploadStatus = .Failed(err)
-
-		case UploadStatus.Uploading(0, 0).hashValue:
-			let n1 = aDecoder.decodeObjectForKey("uploadStatusUploading1") as! NSNumber
-			let n2 = aDecoder.decodeObjectForKey("uploadStatusUploading2") as! NSNumber
-			uploadStatus = .Uploading(n1.unsignedLongValue, n2.unsignedLongValue)
-
-		default:
-			()
-		}
-
-		super.init(coder: aDecoder)
-	}
-
-	public override func encodeWithCoder(aCoder: NSCoder) {
-		super.encodeWithCoder(aCoder)
-
-		aCoder.encodeInteger(uploadStatus.hashValue, forKey: "uploadStatusHash")
-
-		switch uploadStatus {
-		case .Uploaded(let attributes):
-			aCoder.encodeObject(attributes, forKey: "uploadStatusUploadedAttributes")
-		case .Failed(let error):
-			aCoder.encodeObject(error, forKey: "uploadStatusFailedError")
-		case .Uploading(let n1, let n2):
-			aCoder.encodeObject(NSNumber(unsignedLong: n1), forKey: "uploadStatusUploading1")
-			aCoder.encodeObject(NSNumber(unsignedLong: n2), forKey: "uploadStatusUploading2")
-		case .Pending:
-			()
-		}
-	}
-
 
 	override internal func convert(fromString value:String?) -> AnyObject? {
 		var result:AnyObject?
 
 		if let valueString = value {
 			let data = valueString.dataUsingEncoding(NSUTF8StringEncoding,
-				allowLossyConversion: false)
+					allowLossyConversion: false)
+			if let jsonObject:AnyObject = try? NSJSONSerialization.JSONObjectWithData(data!,
+					options: NSJSONReadingOptions(rawValue: 0)) {
+				if let jsonDict = jsonObject as? NSDictionary {
+					let dict = ["groupId" : jsonDict["groupId"]!,
+							"uuid" : jsonDict["uuid"]!,
+							"version" : jsonDict["version"]!]
 
-			let jsonObject: AnyObject? = NSJSONSerialization.JSONObjectWithData(data!,
-				options: NSJSONReadingOptions(0),
-				error: nil)
-
-			if let jsonDict = jsonObject as? [String:AnyObject] {
-				uploadStatus = .Uploaded(jsonDict)
-				result = jsonDict
+					uploadStatus = UploadStatus.Uploaded(dict)
+					result = dict
+				}
 			}
 			else if valueString != "" {
-				uploadStatus = .Pending
 				result = valueString
 			}
 		}
@@ -160,40 +90,35 @@ public class DDLFieldDocument : DDLField {
 	}
 
 	override internal func convert(fromCurrentValue value: AnyObject?) -> String? {
+		var result: String?
+
 		switch uploadStatus {
-		case .Uploaded(let json):
-			if let groupId = json["groupId"] as? NSNumber,
-					uuid = json["uuid"] as? String,
-					version = json["version"] as? String {
-				return "{\"groupId\":\(groupId)," +
-						"\"uuid\":\"\(uuid)\"," +
-						"\"version\":\"\(version)\"}"
-			}
-			else {
-				let data = NSJSONSerialization.dataWithJSONObject(json,
-					options: .allZeros,
-					error: nil)
+			case .Uploaded(let json):
+				let groupId = (json["groupId"] ?? nil) as? Int
+				let uuid = (json["uuid"] ?? nil) as? String
+				let version = (json["version"] ?? nil) as? String
 
-				if let data = data {
-					return NSString(data: data, encoding: NSUTF8StringEncoding) as? String
+				if groupId != nil && uuid != nil && version != nil {
+					result = "{\"groupId\":\(groupId!)," +
+								"\"uuid\":\"\(uuid!)\"," +
+								"\"version\":\"\(version!)\"}"
 				}
-			}
 
-		default: ()
+			default: ()
 		}
 
-		return nil
+		return result
 	}
 
 	override func convertToLabel(fromCurrentValue value: AnyObject?) -> String? {
 		switch currentValue {
-		case is UIImage:
-			return LocalizedString("core", "an-image-has-been-selected", self)
-		case is NSURL:
-			return LocalizedString("core", "a-video-has-been-selected", self)
-		case is [String:AnyObject]:
-			return LocalizedString("core", "a-file-is-already-uploaded", self)
-		default: ()
+			case is UIImage:
+				return LocalizedString("core", key: "an-image-has-been-selected", obj: self)
+			case is NSURL:
+				return LocalizedString("core", key: "a-video-has-been-selected", obj: self)
+			case is [String:AnyObject]:
+				return LocalizedString("core", key: "a-file-is-already-uploaded", obj: self)
+			default: ()
 		}
 
 		return nil
@@ -204,10 +129,8 @@ public class DDLFieldDocument : DDLField {
 
 		if result {
 			switch uploadStatus {
-			case .Failed(_):
-				result = false
-			default:
-				result = true
+				case .Failed(_): result = false
+				default: result = true
 			}
 		}
 
@@ -221,22 +144,17 @@ public class DDLFieldDocument : DDLField {
 		var result: NSInputStream?
 
 		switch currentValue {
-		case let image as UIImage:
-			let imageData = UIImagePNGRepresentation(image)
-			size = Int64(imageData.length)
-			result = NSInputStream(data: imageData)
-
-		case let videoURL as NSURL:
-			var outError:NSError?
-			if let attributes = NSFileManager.defaultManager().attributesOfItemAtPath(
-					videoURL.path!, error: &outError) {
+			case let image as UIImage:
+				let imageData = UIImagePNGRepresentation(image)
+				size = Int64(imageData!.length)
+				result = NSInputStream(data: imageData!)
+			case let videoURL as NSURL:
+                let attributes = try! NSFileManager.defaultManager().attributesOfItemAtPath(videoURL.path!)
 				if let sizeValue = attributes[NSFileSize] as? NSNumber {
 					size = sizeValue.longLongValue
 				}
-			}
-			result = NSInputStream(URL: videoURL)
-
-		default: ()
+				result = NSInputStream(URL: videoURL)
+			default: ()
 		}
 
 		return result
@@ -247,9 +165,8 @@ public class DDLFieldDocument : DDLField {
 
 //MARK: Equatable
 
-public func ==(
-		left: DDLFieldDocument.UploadStatus,
-		right: DDLFieldDocument.UploadStatus)
-		-> Bool {
+public func ==(left: DDLFieldDocument.UploadStatus, right: DDLFieldDocument.UploadStatus) ->
+		Bool {
+
 	return left.hashValue == right.hashValue
 }

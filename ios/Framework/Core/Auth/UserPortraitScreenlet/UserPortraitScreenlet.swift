@@ -50,8 +50,6 @@ public class UserPortraitScreenlet: BaseScreenlet {
 		}
 	}
 
-	@IBInspectable public var offlinePolicy: String? = CacheStrategyType.RemoteFirst.rawValue
-
 	@IBOutlet public weak var delegate: UserPortraitScreenletDelegate?
 
 
@@ -70,24 +68,19 @@ public class UserPortraitScreenlet: BaseScreenlet {
 		viewModel.borderWidth = self.borderWidth
 		viewModel.borderColor = self.borderColor
 		viewModel.editable = self.editable
+		viewModel.portraitLoaded = onPortraitLoaded
 	}
 
 	public func loadLoggedUserPortrait() -> Bool {
-		if SessionContext.currentUserId == nil {
-			return false
-		}
+		let interactor = UserPortraitLoadLoggedUserInteractor(screenlet: self)
 
-		let interactor = DownloadUserPortraitInteractor(
-			screenlet: self,
-			userId: SessionContext.currentUserId!)
+		loadedUserId =  SessionContext.currentUserId
 
-		loadedUserId = SessionContext.currentUserId
-
-		return performAction(name: "load-portrait", sender: interactor)
+		return startInteractor(interactor)
 	}
 
-	public func load(#portraitId: Int64, uuid: String, male: Bool = true) -> Bool {
-		let interactor = DownloadUserPortraitInteractor(
+	public func load(portraitId portraitId: Int64, uuid: String, male: Bool = true) -> Bool {
+		let interactor = UserPortraitAttributesLoadInteractor(
 				screenlet: self,
 				portraitId: portraitId,
 				uuid: uuid,
@@ -95,73 +88,46 @@ public class UserPortraitScreenlet: BaseScreenlet {
 
 		loadedUserId = nil
 
-		return performAction(name: "load-portrait", sender: interactor)
+		return startInteractor(interactor)
 	}
 
-	public func load(#userId: Int64) -> Bool {
-		let interactor = DownloadUserPortraitInteractor(
+	public func load(userId userId: Int64) -> Bool {
+		let interactor = UserPortraitLoadByUserIdInteractor(
 				screenlet: self,
 				userId: userId)
 
 		loadedUserId = userId
 
-		return performAction(name: "load-portrait", sender: interactor)
+		return startInteractor(interactor)
 	}
 
-	public func load(#companyId: Int64, emailAddress: String) -> Bool {
-		let interactor = DownloadUserPortraitInteractor(
+	public func load(companyId companyId: Int64, emailAddress: String) -> Bool {
+		let interactor = UserPortraitLoadByEmailAddressInteractor(
 				screenlet: self,
 				companyId: companyId,
 				emailAddress: emailAddress)
 
 		loadedUserId = nil
 
-		return performAction(name: "load-portrait", sender: interactor)
+		return startInteractor(interactor)
 	}
 
-	public func load(#companyId: Int64, screenName: String) -> Bool {
-		let interactor = DownloadUserPortraitInteractor(
+	public func load(companyId companyId: Int64, screenName: String) -> Bool {
+		let interactor = UserPortraitLoadByScreenNameInteractor(
 				screenlet: self,
 				companyId: companyId,
 				screenName: screenName)
 
 		loadedUserId = nil
 
-		return performAction(name: "load-portrait", sender: interactor)
+		return startInteractor(interactor)
 	}
 
-	override public func createInteractor(#name: String, sender: AnyObject?) -> Interactor? {
-		let interactor: Interactor?
+	override public func createInteractor(name name: String?, sender: AnyObject?) -> Interactor? {
 
-		switch name {
-		case "load-portrait":
-			let loadInteractor = sender as! DownloadUserPortraitInteractor
-			interactor = loadInteractor
+		let interactor: UploadUserPortraitInteractor?
 
-			loadInteractor.cacheStrategy = CacheStrategyType(rawValue: self.offlinePolicy ?? "") ?? .RemoteFirst
-
-			loadInteractor.onSuccess = {
-				if let imageValue = loadInteractor.resultImage {
-					let finalImage = self.delegate?.screenlet?(self, onUserPortraitResponseImage: imageValue)
-
-					self.loadedUserId = loadInteractor.resultUserId
-					self.setPortraitImage(finalImage ?? imageValue)
-				}
-				else {
-					self.delegate?.screenlet?(self, onUserPortraitError: NSError.errorWithCause(.InvalidServerResponse))
-
-					self.loadedUserId = nil
-					self.setPortraitImage(nil)
-				}
-			}
-
-			loadInteractor.onFailure = {
-				self.delegate?.screenlet?(self, onUserPortraitError: $0)
-
-				self.loadedUserId = nil
-				self.setPortraitImage(nil)
-			}
-
+		switch name! {
 		case "upload-portrait":
 			let image = sender as! UIImage
 			let userId: Int64
@@ -170,28 +136,24 @@ public class UserPortraitScreenlet: BaseScreenlet {
 				userId = loadedUserIdValue
 			}
 			else {
-				println("ERROR: Can't change the portrait without an userId")
+				print("ERROR: Can't change the portrait without an userId", terminator: "")
 
 				return nil
 			}
 
-			let uploadInteractor = UploadUserPortraitInteractor(
+			interactor = UploadUserPortraitInteractor(
 					screenlet: self,
 					userId: userId,
 					image: image)
-			interactor = uploadInteractor
 
-			uploadInteractor.cacheStrategy = CacheStrategyType(rawValue: self.offlinePolicy ?? "") ?? .RemoteFirst
-
-			uploadInteractor.onSuccess = { [weak interactor] in
-				self.delegate?.screenlet?(self, onUserPortraitUploaded: uploadInteractor.uploadResult!)
-
-				self.loadedUserId = uploadInteractor.userId
-				self.setPortraitImage(uploadInteractor.image)
+			interactor!.onSuccess = { [weak interactor] in
+				self.delegate?.screenlet?(self, onUserPortraitUploaded: interactor!.uploadResult!)
+				self.load(userId: userId)
 			}
 
-			uploadInteractor.onFailure = {
+			interactor!.onFailure = {
 				self.delegate?.screenlet?(self, onUserPortraitUploadError: $0)
+				return
 			}
 
 		default:
@@ -201,16 +163,40 @@ public class UserPortraitScreenlet: BaseScreenlet {
 		return interactor
 	}
 
-
 	//MARK: Private methods
 
-	private func setPortraitImage(image: UIImage?) {
-		viewModel.image = image
-
-		if image == nil {
-			let error = NSError.errorWithCause(.AbortedDueToPreconditions)
-			delegate?.screenlet?(self, onUserPortraitError: error)
+	private func startInteractor(interactor: UserPortraitBaseInteractor) -> Bool {
+		interactor.onSuccess = {
+			self.setPortraitURL(interactor.resultURL)
+			self.loadedUserId = interactor.resultUserId
 		}
+
+		return interactor.start()
+	}
+
+	private func setPortraitURL(url: NSURL?) {
+		viewModel.portraitURL = url
+
+		if url == nil {
+			screenletView?.onFinishOperation()
+			delegate?.screenlet?(self,
+					onUserPortraitError: NSError.errorWithCause(.AbortedDueToPreconditions))
+		}
+	}
+
+	private func onPortraitLoaded(image: UIImage?, error: NSError?) -> UIImage? {
+		var finalImage = image
+
+		if let errorValue = error {
+			delegate?.screenlet?(self, onUserPortraitError: errorValue)
+		}
+		else if let imageValue = image {
+			finalImage = delegate?.screenlet?(self, onUserPortraitResponseImage: imageValue)
+		}
+
+		screenletView?.onFinishOperation()
+
+		return finalImage
 	}
 
 }

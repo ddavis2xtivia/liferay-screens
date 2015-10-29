@@ -35,7 +35,7 @@ extension NSBundle {
 	}
 
 	public class func discoverBundles() -> [NSBundle] {
-		let allBundles = NSBundle.allFrameworks() as! [NSBundle]
+		let allBundles = NSBundle.allFrameworks() 
 
 		return allBundles.filter {
 			let screensPrefix = "LiferayScreens"
@@ -90,7 +90,7 @@ extension NSBundle {
 	}
 
 
-	public class func imageInBundles(#name: String, currentClass: AnyClass) -> UIImage? {
+	public class func imageInBundles(name name: String, currentClass: AnyClass) -> UIImage? {
 		for bundle in allBundles(currentClass) {
 			if let path = bundle.pathForResource(name, ofType: "png") {
 				return UIImage(contentsOfFile: path)

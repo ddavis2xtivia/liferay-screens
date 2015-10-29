@@ -12,7 +12,6 @@
 * details.
 */
 import UIKit
-import LiferayScreens
 
 
 public class LoginView_flat7: LoginView_default {
@@ -29,6 +28,8 @@ public class LoginView_flat7: LoginView_default {
 		super.onCreated()
 
 		setFlat7ButtonBackground(loginButton)
+
+		BaseScreenlet.setHUDCustomColor(Flat7ThemeBasicGreen)
 	}
 
 	override public var userName: String? {
@@ -38,22 +39,16 @@ public class LoginView_flat7: LoginView_default {
 	}
 
 	override public func onSetTranslations() {
-		let bundle = NSBundle(forClass: self.dynamicType)
+		titleLabel!.text = LocalizedString("flat7", key: "login-title", obj: self)
+		subtitleLabel!.text = LocalizedString("flat7", key: "login-subtitle", obj: self)
+		userNamePlaceholder!.text = LocalizedString("flat7" ,key: "login-email", obj: self)
+		passwordPlaceholder!.text = LocalizedString("flat7", key: "login-password", obj: self)
 
-		titleLabel!.text = LocalizedString("flat7", "login-title", self)
-		subtitleLabel!.text = LocalizedString("flat7", "login-subtitle", self)
-		userNamePlaceholder!.text = LocalizedString("flat7" ,"login-email", self)
-		passwordPlaceholder!.text = LocalizedString("flat7", "login-password", self)
-
-		loginButton!.replaceAttributedTitle(LocalizedString("flat7", "login-login", self),
+		loginButton!.replaceAttributedTitle(LocalizedString("flat7", key: "login-login", obj: self),
 				forState: .Normal)
 
 		userNameField!.placeholder = "";
 		passwordField!.placeholder = "";
-	}
-
-	override public func createProgressPresenter() -> ProgressPresenter {
-		return Flat7ProgressPresenter()
 	}
 
 
@@ -64,7 +59,7 @@ public class LoginView_flat7: LoginView_default {
 			replacementString string: String!)
 			-> Bool {
 
-		let newText = (textField.text as NSString).stringByReplacingCharactersInRange(range, withString:string)
+		let newText = (textField.text! as NSString).stringByReplacingCharactersInRange(range, withString:string)
 
 		let placeHolder = textField == userNameField ? userNamePlaceholder : passwordPlaceholder
 

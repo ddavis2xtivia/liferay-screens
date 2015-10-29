@@ -12,7 +12,6 @@
 * details.
 */
 import UIKit
-import LiferayScreens
 
 
 public class ForgotPasswordView_flat7: ForgotPasswordView_default {
@@ -28,24 +27,20 @@ public class ForgotPasswordView_flat7: ForgotPasswordView_default {
 		super.onCreated()
 
 		setFlat7ButtonBackground(requestPasswordButton)
+
+		BaseScreenlet.setHUDCustomColor(Flat7ThemeBasicGreen)
 	}
 
 	override public func onSetTranslations() {
-		let bundle = NSBundle(forClass: self.dynamicType)
-
-		titleLabel!.text = LocalizedString("flat7", "forgotpassword-title", self)
-		subtitleLabel!.text = LocalizedString("flat7", "forgotpassword-subtitle", self)
-		userNamePlaceholder!.text = LocalizedString("flat7", "forgotpassword-email", self)
+		titleLabel!.text = LocalizedString("flat7", key: "forgotpassword-title", obj: self)
+		subtitleLabel!.text = LocalizedString("flat7", key: "forgotpassword-subtitle", obj: self)
+		userNamePlaceholder!.text = LocalizedString("flat7", key: "forgotpassword-email", obj: self)
 
 		requestPasswordButton!.replaceAttributedTitle(
-				LocalizedString("flat7", "forgotpassword-request", self),
+				LocalizedString("flat7", key: "forgotpassword-request", obj: self),
 				forState: .Normal)
 
 		userNameField!.placeholder = "";
-	}
-
-	override public func createProgressPresenter() -> ProgressPresenter {
-		return Flat7ProgressPresenter()
 	}
 
 
@@ -65,7 +60,7 @@ public class ForgotPasswordView_flat7: ForgotPasswordView_default {
 			replacementString string: String!)
 			-> Bool {
 
-		let newText = (textField.text as NSString).stringByReplacingCharactersInRange(range,
+		let newText = (textField.text! as NSString).stringByReplacingCharactersInRange(range,
 				withString:string)
 
 		userNamePlaceholder!.changeVisibility(visible: newText != "")

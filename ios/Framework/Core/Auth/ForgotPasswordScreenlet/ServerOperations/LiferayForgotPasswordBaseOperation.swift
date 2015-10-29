@@ -20,41 +20,57 @@ public class LiferayForgotPasswordBaseOperation: ServerOperation {
 
 	public var resultPasswordSent: Bool?
 
-	internal let viewModel: ForgotPasswordViewModel
-
-	private let anonymousUsername: String
-	private let anonymousPassword: String
-
-
-	public init(viewModel: ForgotPasswordViewModel, anonymousUsername: String, anonymousPassword: String) {
-		self.viewModel = viewModel
-		self.anonymousUsername = anonymousUsername
-		self.anonymousPassword = anonymousPassword
-
-		super.init()
+	override public var hudLoadingMessage: HUDMessage? {
+		return (LocalizedString("forgotpassword-screenlet", key: "loading-message", obj: self),
+		details: LocalizedString("forgotpassword-screenlet", key: "loading-details", obj: self))
 	}
+	override public var hudFailureMessage: HUDMessage? {
+		return (LocalizedString("forgotpassword-screenlet", key: "loading-error", obj: self), details: nil)
+	}
+	override public var hudSuccessMessage: HUDMessage? {
+		return (LocalizedString("forgotpassword-screenlet", key: successMessageKey, obj: self),
+				details: LocalizedString("forgotpassword-screenlet", key: "loaded-details", obj: self))
+	}
+
+	internal var viewModel: ForgotPasswordViewModel {
+		return screenlet.screenletView as! ForgotPasswordViewModel
+	}
+
+	private var successMessageKey = ""
 
 
 	//MARK ServerOperation
 
-	override public func validateData() -> ValidationError? {
-		let error = super.validateData()
+	override func validateData() -> Bool {
+		var valid = super.validateData()
 
-		if error == nil {
-			if viewModel.userName == nil {
-				return ValidationError("forgotpassword-screenlet", "validation")
-			}
+		if valid && viewModel.userName == nil {
+			showValidationHUD(
+					message: LocalizedString("forgotpassword-screenlet", key: "validation", obj: self))
+
+			valid = false
 		}
 
-		return error
+		return valid
 	}
 
-	override public func doRun(#session: LRSession) {
+	override func postRun() {
+		if lastError != nil {
+			successMessageKey = resultPasswordSent! ? "password-sent" : "reset-sent"
+		}
+	}
+
+	override func doRun(session session: LRSession) {
 		var outError: NSError?
 
-		let result = sendForgotPasswordRequest(
-				service: LRScreensuserService_v62(session: session),
-				error: &outError)
+		let result: Bool?
+		do {
+			result = try sendForgotPasswordRequest(
+							service: LRScreensuserService_v62(session: session))
+		} catch let error as NSError {
+			outError = error
+			result = nil
+		}
 
 		if outError != nil {
 			lastError = outError!
@@ -70,18 +86,17 @@ public class LiferayForgotPasswordBaseOperation: ServerOperation {
 		}
 	}
 
-	override public func createSession() -> LRSession? {
-		return SessionContext.createAnonymousBasicSession(anonymousUsername, anonymousPassword)
-	}
 
 	//MARK: Template Methods
 	
 	internal func sendForgotPasswordRequest(
-			#service: LRScreensuserService_v62,
-			error: NSErrorPointer)
-			-> Bool? {
+			service service: LRScreensuserService_v62) throws
+			-> Bool {
+		let error: NSError! = NSError(domain: "Migrator", code: 0, userInfo: nil)
 
-		fatalError("sendForgotPasswordRequest must be overriden")
+		assertionFailure("sendForgotPasswordRequest must be overriden")
+
+		throw error
 	}
 
 }

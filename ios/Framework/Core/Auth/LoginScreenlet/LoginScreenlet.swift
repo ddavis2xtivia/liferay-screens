@@ -83,9 +83,9 @@ public class LoginScreenlet: BaseScreenlet, BasicAuthBasedType {
 		}
 	}
 
-	override public func createInteractor(#name: String, sender: AnyObject?) -> Interactor? {
+	override public func createInteractor(name name: String?, sender: AnyObject?) -> Interactor? {
 
-		switch name {
+		switch name! {
 		case "login-action":
 			return createLoginInteractor()
 		case "oauth-action":
@@ -102,7 +102,7 @@ public class LoginScreenlet: BaseScreenlet, BasicAuthBasedType {
 			self.delegate?.screenlet?(self,
 					onLoginResponseUserAttributes: interactor.resultUserAttributes!)
 
-			if self.viewModel.saveCredentials {
+			if self.saveCredentials {
 				if SessionContext.storeSession() {
 					self.delegate?.onScreenletCredentialsSaved?(self)
 				}
@@ -111,6 +111,7 @@ public class LoginScreenlet: BaseScreenlet, BasicAuthBasedType {
 
 		interactor.onFailure = {
 			self.delegate?.screenlet?(self, onLoginError: $0)
+			return
 		}
 
 		return interactor

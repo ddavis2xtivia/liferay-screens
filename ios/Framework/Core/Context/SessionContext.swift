@@ -19,15 +19,13 @@ import Foundation
 #endif
 
 
-@objc public class SessionContext {
+@objc public class SessionContext: NSObject {
 
 	//MARK: Singleton type
 
 	private struct StaticInstance {
 		static var currentSession: LRSession?
 		static var userAttributes: [String:AnyObject] = [:]
-
-		static var chacheManager: CacheManager?
 
 		static var sessionStorage = SessionStorage(
 			credentialStore: BasicCredentialsStoreKeyChain())
@@ -40,15 +38,19 @@ import Foundation
 		return StaticInstance.currentSession != nil
 	}
 
+    public class var currentSession: LRSession? {
+        return StaticInstance.currentSession;
+    }
+    
 	public class var currentBasicUserName: String? {
-		var authentication = StaticInstance.currentSession?.authentication
+		let authentication = StaticInstance.currentSession?.authentication
 			as? LRBasicAuthentication
 
 		return authentication?.username
 	}
 
 	public class var currentBasicPassword: String? {
-		var authentication = StaticInstance.currentSession?.authentication
+		let authentication = StaticInstance.currentSession?.authentication
 			as? LRBasicAuthentication
 
 		return authentication?.password
@@ -56,12 +58,8 @@ import Foundation
 
 	public class var currentUserId: Int64? {
 		return StaticInstance.userAttributes["userId"]
-				.map { $0 as! NSNumber }
-				.map { $0.longLongValue }
-	}
-
-	public class var currentCacheManager: CacheManager? {
-		return StaticInstance.chacheManager
+				.map { $0 as! Int }
+				.map { Int64($0) }
 	}
 
 	internal class var sessionStorage: SessionStorage {
@@ -74,21 +72,17 @@ import Foundation
 	}
 
 	//MARK Public methods
+    
+    public class func clearCurrentSession() {
+        StaticInstance.currentSession = nil;
+    }
 
 	public class func userAttribute(key: String) -> AnyObject? {
 		return StaticInstance.userAttributes[key]
 	}
 
-	public class func createAnonymousBasicSession(userName: String, _ password: String) -> LRSession {
-		return LRSession(
-			server: LiferayServerContext.server,
-			authentication: LRBasicAuthentication(
-				username: userName,
-				password: password))
-	}
-
 	public class func createBasicSession(
-			#username: String,
+			username username: String,
 			password: String,
 			userAttributes: [String:AnyObject])
 			-> LRSession {
@@ -106,7 +100,7 @@ import Foundation
 	}
 
 	public class func createOAuthSession(
-			#authentication: LROAuth,
+			authentication authentication: LROAuth,
 			userAttributes: [String:AnyObject])
 			-> LRSession {
 
@@ -121,7 +115,7 @@ import Foundation
 
 
 	private class func createSession(
-			#authentication: LRAuthentication,
+			authentication authentication: LRAuthentication,
 			userAttributes: [String:AnyObject])
 			-> LRSession {
 
@@ -150,7 +144,6 @@ import Foundation
 	public class func clearSession() {
 		StaticInstance.currentSession = nil
 		StaticInstance.userAttributes = [:]
-		StaticInstance.chacheManager = nil
 	}
 
 	public class func storeSession() -> Bool {
@@ -165,11 +158,9 @@ import Foundation
 
 	public class func loadSessionFromStore() -> Bool {
 		if let sessionStorage = SessionStorage() {
-			if let result = sessionStorage.load()
-					where result.session.server != nil {
+			if let result = sessionStorage.load() {
 				StaticInstance.currentSession = result.session
 				StaticInstance.userAttributes = result.userAttributes
-				StaticInstance.chacheManager = CacheManager(session: result.session)
 
 				return true
 			}
@@ -184,7 +175,7 @@ import Foundation
 	//MARK Private methods
 
 	private class func createSession(
-			#server: String,
+			server server: String,
 			authentication: LRAuthentication,
 			userAttributes: [String:AnyObject])
 			-> LRSession {
@@ -193,7 +184,6 @@ import Foundation
 
 		StaticInstance.currentSession = session
 		StaticInstance.userAttributes = userAttributes
-		StaticInstance.chacheManager = CacheManager(session: session)
 
 		return session
 	}
