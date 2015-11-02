@@ -61,12 +61,12 @@ import Foundation
 
 	//MARK: Public methods
 
-	public override class func valueForKey(key: String) -> AnyObject? {
+	public class func propertyForKey(key: String) -> AnyObject? {
 		loadContextFile()
 		return StaticInstance.serverProperties![key]
 	}
 
-	public class func setValueForKey(value: AnyObject, forKey key: String) {
+	public class func setPropertyValue(value: AnyObject, forKey key: String) {
 		loadContextFile()
 		return StaticInstance.serverProperties![key] = value
 	}

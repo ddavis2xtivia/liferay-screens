@@ -14,7 +14,7 @@
 import UIKit
 
 
-public class ServerOperation: NSOperation {
+@objc public class ServerOperation: NSOperation {
 
 	private struct OperationsQueue {
 
@@ -59,16 +59,19 @@ public class ServerOperation: NSOperation {
 	//MARK: NSOperation
 
 	public override func main() {
-		if preRun() {
-			if let session = createSession() {
-				prepareRun()
-				doRun(session: session)
-				postRun()
-				finishRun()
-			}
+		if self.cancelled {
+			lastError = NSError.errorWithCause(.Cancelled)
 		}
 		else {
-			lastError = NSError.errorWithCause(.AbortedDueToPreconditions, userInfo: nil)
+			if preRun() {
+				if let session = createSession() {
+					doRun(session: session)
+					postRun()
+				}
+			}
+			else {
+				lastError = NSError.errorWithCause(.AbortedDueToPreconditions)
+			}
 		}
 
 		callOnComplete()

@@ -131,9 +131,6 @@ public enum CacheStrategyType: String {
 	public func getMetadata(collection collection: String, key: String, result: CacheMetadata? -> ()) {
 		readConnection.readWithBlock { transaction in
 			let value: AnyObject? = transaction.metadataForKey(key, inCollection: collection)
-
-			print("getMetadata \(collection):\(key) -> synchronized: \((value as? CacheMetadata)?.synchronized)")
-
 			result(value as? CacheMetadata)
 		}
 	}
@@ -146,9 +143,6 @@ public enum CacheStrategyType: String {
 
 		// The item becomes clean (the opposite of dirty,
 		// that is: synchronized): updated 'sent' & 'received' dates
-
-		print("==== set Clean")
-
 		set(collection: collection,
 			keys: [key],
 			values: [value],
@@ -177,8 +171,6 @@ public enum CacheStrategyType: String {
 			attributes: [String:AnyObject]) {
 
 		// The item becomes dirty: fresh received date but nil sent date
-		print("==== set Dirty")
-
 		set(collection: collection,
 			keys: [key],
 			values: [value],
@@ -206,8 +198,6 @@ public enum CacheStrategyType: String {
 					forKey: k,
 					inCollection: collection,
 					withMetadata: metadata)
-
-				print("set \(collection):\(k) -> synchronized: \(synchronized)")
 			}
 		}
 	}
@@ -216,9 +206,6 @@ public enum CacheStrategyType: String {
 			collection collection: String,
 			key: String,
 			attributes: [String:AnyObject]) {
-
-		print("==== set Clean")
-
 		setMetadata(collection: collection,
 			key: key,
 			synchronized: NSDate(),
@@ -240,8 +227,6 @@ public enum CacheStrategyType: String {
 				transaction.replaceMetadata(newMetadata,
 					forKey: key,
 					inCollection: collection)
-
-				print("setMetadata \(collection):\(key) -> synchronized=\(newMetadata.synchronized)")
 			}
 		}
 	}

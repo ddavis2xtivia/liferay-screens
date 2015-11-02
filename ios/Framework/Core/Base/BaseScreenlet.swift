@@ -62,7 +62,7 @@ import QuartzCore
 	private var _currentPreviewImage: UIImage?
 	private var _previewLayer: CALayer?
 
-	private var _runningInteractors = [Interactor]()
+	private var _runningInteractors = [String:[Interactor]]()
 
 
 	//MARK: UIView
@@ -189,11 +189,22 @@ import QuartzCore
 	 * Typically, it's called from TouchUpInside UI event or when the programmer wants to
 	 * start the interaction programatically.
 	 */
-	public func performAction(name name: String?, sender: AnyObject? = nil) -> Bool {
-		if let interactor = createInteractor(name: name, sender: sender) {
-			_runningInteractors.append(interactor)
+	public func performAction(#name: String, sender: AnyObject? = nil) -> Bool {
+		var result = false
 
-			return onAction(name: name, interactor: interactor, sender: sender)
+		if let interactor = self.createInteractor(name: name, sender: sender) {
+			trackInteractor(interactor, withName: name)
+
+			if let message = screenletView?.progressMessageForAction(name, messageType: .Working) {
+				showHUDWithMessage(message,
+					closeMode: .ManualClose,
+					spinnerMode: .IndeterminateSpinner)
+			}
+
+			result = onAction(name: name, interactor: interactor, sender: sender)
+		}
+		else {
+			println("WARN: No interactor created for action \(name)")
 		}
 
 		print("WARN: No interactor created for action \(name)", terminator: "")
@@ -212,16 +223,71 @@ import QuartzCore
 		return interactor.start()
 	}
 
-	public func createInteractor(name name: String?, sender: AnyObject?) -> Interactor? {
+	public func isActionRunning(name: String) -> Bool {
+		var firstInteractor: Interactor? = nil
+
+		synchronized(_runningInteractors) {
+			firstInteractor = self._runningInteractors[name]?.first
+		}
+
+		return firstInteractor != nil
+	}
+
+	public func cancelInteractorsForAction(name: String) {
+		let interactors = _runningInteractors[name] ?? []
+
+		for interactor in interactors {
+			interactor.cancel()
+		}
+	}
+
+	public func createInteractor(#name: String, sender: AnyObject?) -> Interactor? {
 		return nil
 	}
 
-	public func endInteractor(interactor: Interactor) {
-		synchronized(_runningInteractors) {
-			if let foundIndex = self._runningInteractors.indexOf(interactor) {
-				self._runningInteractors.removeAtIndex(foundIndex)
+	public func endInteractor(interactor: Interactor, error: NSError?) {
+
+		func hideInteractorHUD(error: NSError?) {
+			let messageType: ProgressMessageType
+			let closeMode: ProgressCloseMode?
+			var msg: String?
+
+			if let error = error {
+				messageType = .Failure
+				closeMode = .ManualClose_TouchClosable
+
+				if error is ValidationError {
+					msg = error.localizedDescription
+				}
+			}
+			else {
+				messageType = .Success
+				closeMode = .Autoclose_TouchClosable
+			}
+
+			if msg == nil {
+				msg = screenletView?.progressMessageForAction(
+					interactor.actionName ?? BaseScreenlet.DefaultAction,
+					messageType: messageType)
+			}
+
+			if let msg = msg, closeMode = closeMode {
+				showHUDWithMessage(msg,
+					closeMode: closeMode,
+					spinnerMode: .NoSpinner)
+			}
+			else {
+				hideHUD()
 			}
 		}
+
+		untrackInteractor(interactor)
+
+		let result: AnyObject? = interactor.interactionResult()
+		onFinishInteraction(result, error: error)
+		screenletView?.onFinishInteraction(result, error: error)
+
+		hideInteractorHUD(error)
 	}
 
 	/**
@@ -249,8 +315,8 @@ import QuartzCore
 
 				if nibPath != nil {
 					let views = bundle.loadNibNamed(nibName,
-							owner:self,
-							options:nil)
+						owner:self,
+						options:nil)
 
 					assert(views.count > 0, "Malformed xib \(nibName). Without views")
 
@@ -308,4 +374,39 @@ import QuartzCore
 		return appliedTheme
 	}
 
+	private func rootView(currentView:UIView) -> UIView {
+		if currentView.superview == nil {
+			return currentView;
+		}
+
+		return rootView(currentView.superview!)
+	}
+
+	private func trackInteractor(interactor: Interactor, withName name: String) {
+		synchronized(_runningInteractors) {
+			var interactors = self._runningInteractors[name]
+			if interactors?.count ?? 0 == 0 {
+				interactors = [Interactor]()
+			}
+
+			interactors?.append(interactor)
+
+			self._runningInteractors[name] = interactors
+			interactor.actionName = name
+		}
+	}
+
+	private func untrackInteractor(interactor: Interactor) {
+		synchronized(_runningInteractors) {
+			let name = interactor.actionName!
+			let interactors = self._runningInteractors[name] ?? []
+
+			if let foundIndex = find(interactors, interactor) {
+				self._runningInteractors[name]?.removeAtIndex(foundIndex)
+			}
+			else {
+				println("ERROR: There's no interactors tracked for name \(interactor.actionName!)")
+			}
+		}
+	}
 }

@@ -19,45 +19,50 @@ import UIKit
 	public var onSuccess: (Void -> Void)?
 	public var onFailure: (NSError -> Void)?
 
-	public let screenlet: BaseScreenlet
+	public var lastError: NSError?
+
+	public let screenlet: BaseScreenlet?
+
+	internal var cancelled = false
 
 	public init(screenlet: BaseScreenlet) {
 		self.screenlet = screenlet
 	}
 
 	public func callOnSuccess() {
-		if NSThread.isMainThread() {
-			onSuccess?()
-			finish()
-		}
-		else {
-			dispatch_async(dispatch_get_main_queue()) {
+		if !cancelled {
+			dispatch_main {
 				self.onSuccess?()
-				self.finish()
+				self.finishWithError(nil)
 			}
 		}
 	}
 
 	public func callOnFailure(error: NSError) {
-		if NSThread.isMainThread() {
-			onFailure?(error)
-			finish()
-		}
-		else {
-			dispatch_async(dispatch_get_main_queue()) {
+		if !cancelled {
+			dispatch_main {
 				self.onFailure?(error)
-				self.finish()
+				self.finishWithError(error)
 			}
 		}
 	}
 
 	public func start() -> Bool {
+		cancelled = false
 		return false
 	}
 
-	private func finish() {
-		screenlet.endInteractor(self)
+	public func cancel() {
+		callOnFailure(NSError.errorWithCause(.Cancelled))
+		cancelled = true
+	}
 
+	public func interactionResult() -> AnyObject? {
+		return nil
+	}
+
+	private func finishWithError(error: NSError?) {
+		screenlet?.endInteractor(self, error: error)
 		// break retain cycle
 		onSuccess = nil
 		onFailure = nil

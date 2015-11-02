@@ -17,7 +17,9 @@ public enum ScreenletsErrorCause: Int {
 
 	case AbortedDueToPreconditions = -2
 	case InvalidServerResponse = -3
-
+	case ValidationFailed = -4
+	case NotAvailable = -5
+	case Cancelled = -6
 }
 
 public extension NSError {

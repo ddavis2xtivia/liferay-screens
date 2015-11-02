@@ -157,8 +157,10 @@ import Foundation
 	}
 
 	public class func loadSessionFromStore() -> Bool {
-		if let sessionStorage = SessionStorage() {
-			if let result = sessionStorage.load() {
+		let sessionStorage = SessionStorage()
+		if sessionStorage.hasSessionStored {
+			if let result = sessionStorage.load()
+					where result.session.server != nil {
 				StaticInstance.currentSession = result.session
 				StaticInstance.userAttributes = result.userAttributes
 

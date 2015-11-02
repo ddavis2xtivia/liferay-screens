@@ -18,10 +18,33 @@ import UIKit
 #endif
 
 
+// Global initial load
+private func loadPlaceholderCache(done: (UIImage? -> ())? = nil) -> UIImage? {
+	var image: UIImage?
+
+	dispatch_async {
+		image = NSBundle.imageInBundles(
+			name: "default-portrait-placeholder",
+			currentClass: UserPortraitView_default.self)
+
+		UserPortraitView_default.defaultPlaceholder = image
+
+		dispatch_main() {
+			done?(image)
+		}
+	}
+
+	// returns nil because the loading is asynchronous
+	return nil
+}
+
+
 public class UserPortraitView_default: BaseScreenletView,
-		UserPortraitViewModel,
-		UIActionSheetDelegate,
-		UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+	UserPortraitViewModel,
+	UIActionSheetDelegate,
+	UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+
+	public static var defaultPlaceholder: UIImage? = loadPlaceholderCache()
 
 	@IBOutlet weak public var activityIndicator: UIActivityIndicatorView?
 	@IBOutlet weak public var portraitImage: UIImageView?
@@ -60,10 +83,16 @@ public class UserPortraitView_default: BaseScreenletView,
 		}
 	}
 
-	public var portraitLoaded: ((UIImage?, NSError?) -> (UIImage?))?
-
-
-	private(set) var loadedURL: NSURL?
+	override public var progressMessages: [String:ProgressMessages] {
+		return [
+			"load-portrait" : [
+				.Working : ""
+			],
+			"upload-portrait" : [
+				.Working : "",
+				.Failure : LocalizedString("default", "userportrait-uploading-error", self)
+			]]
+	}
 
 	private let imagePicker = UIImagePickerController()
 
@@ -118,10 +147,10 @@ public class UserPortraitView_default: BaseScreenletView,
 			let chooseExisting = LocalizedString("default", key: "userportrait-choose-existing-picture", obj: self)
 
 			let sheet = UIActionSheet(
-					title: "Change portrait",
-					delegate: self,
-					cancelButtonTitle: "Cancel",
-					destructiveButtonTitle: nil, otherButtonTitles: takeNewPicture, chooseExisting)
+				title: "Change portrait",
+				delegate: self,
+				cancelButtonTitle: "Cancel",
+				destructiveButtonTitle: nil, otherButtonTitles: takeNewPicture, chooseExisting)
 			sheet.showInView(self)
 
 			return false
@@ -157,9 +186,16 @@ public class UserPortraitView_default: BaseScreenletView,
 	}
 
 	public func loadPlaceholder() {
-		self.portraitImage?.image = NSBundle.imageInBundles(
-				name: "default-portrait-placeholder",
-				currentClass: self.dynamicType)
+		dispatch_main() {
+			if let placeholder = UserPortraitView_default.defaultPlaceholder {
+				self.portraitImage?.image = placeholder
+			}
+			else {
+				loadPlaceholderCache {
+					self.portraitImage?.image = $0
+				}
+			}
+		}
 	}
 
 
@@ -204,7 +240,7 @@ public class UserPortraitView_default: BaseScreenletView,
 
 	//MARK: UIImagePickerControllerDelegate
 
-    public func imagePickerController(
+	public func imagePickerController(
 			picker: UIImagePickerController,
 			didFinishPickingMediaWithInfo info: [String : AnyObject]) {
 
@@ -215,8 +251,7 @@ public class UserPortraitView_default: BaseScreenletView,
 		userAction(name: "upload-portrait", sender: editedImage)
 	}
 
-
-    public func imagePickerControllerDidCancel(picker: UIImagePickerController) {
+	public func imagePickerControllerDidCancel(picker: UIImagePickerController) {
 		imagePicker.dismissViewControllerAnimated(true) {}
 	}
 
