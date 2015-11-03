@@ -19,7 +19,7 @@ import Foundation
 #endif
 
 
-public class SessionContext {
+@objc public class SessionContext: NSObject {
 
 	//MARK: Singleton type
 
