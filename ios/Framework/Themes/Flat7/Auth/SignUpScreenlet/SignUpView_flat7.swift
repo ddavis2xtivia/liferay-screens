@@ -36,14 +36,14 @@ public class SignUpView_flat7: SignUpView_default {
 	override public func onSetTranslations() {
 		let bundle = NSBundle(forClass: self.dynamicType)
 
-		titleLabel!.text = LocalizedString("flat7", "signup-title", self)
-		subtitleLabel!.text = LocalizedString("flat7", "signup-subtitle", self)
-		firstNamePlaceholder!.text = LocalizedString("flat7", "signup-first-name", self)
-		lastNamePlaceholder!.text = LocalizedString("flat7", "signup-last-name", self)
-		emailAddressPlaceholder!.text = LocalizedString("flat7", "signup-email", self)
-		passwordPlaceholder!.text = LocalizedString("flat7", "signup-password", self)
+        titleLabel!.text = LocalizedString("flat7", key:"signup-title", obj:self)
+		subtitleLabel!.text = LocalizedString("flat7", key:"signup-subtitle", obj:self)
+		firstNamePlaceholder!.text = LocalizedString("flat7", key:"signup-first-name", obj:self)
+		lastNamePlaceholder!.text = LocalizedString("flat7", key:"signup-last-name", obj:self)
+		emailAddressPlaceholder!.text = LocalizedString("flat7", key:"signup-email", obj:self)
+		passwordPlaceholder!.text = LocalizedString("flat7", key:"signup-password", obj:self)
 
-		signUpButton!.replaceAttributedTitle(LocalizedString("flat7", "signup-button", self),
+        signUpButton!.replaceAttributedTitle(LocalizedString("flat7", key:"signup-button", obj:self),
 				forState: .Normal)
 
 		firstNameField!.placeholder = "";
