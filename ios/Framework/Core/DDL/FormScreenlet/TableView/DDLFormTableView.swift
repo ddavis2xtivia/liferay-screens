@@ -170,7 +170,7 @@ public class DDLFormTableView: DDLFormView,
 
 					UIView.animateWithDuration(animation.time.doubleValue,
 							delay: 0,
-							options: UIViewAnimationOptions(animation.curve.unsignedLongValue),
+							options: UIViewAnimationOptions(rawValue: animation.curve.unsignedLongValue),
 							animations: {
 								self.frame = CGRectMake(
 										self.frame.origin.x,
@@ -235,7 +235,7 @@ public class DDLFormTableView: DDLFormView,
 				cellValue.field = field
 			}
 			else {
-				println("ERROR: Cell XIB is not registerd for type " +
+				print("ERROR: Cell XIB is not registerd for type " +
 						field.editorType.toCapitalizedName())
 			}
 		}
@@ -329,7 +329,7 @@ public class DDLFormTableView: DDLFormView,
 				return cell
 			}
 			else {
-				println("ERROR: Cell XIB \(themedNibName) couldn't be registered (no root view?)")
+				print("ERROR: Cell XIB \(themedNibName) couldn't be registered (no root view?)")
 			}
 		}
 
@@ -346,7 +346,7 @@ public class DDLFormTableView: DDLFormView,
 			result = typeHeight.current
 		}
 		else {
-			println("ERROR: Height doesn't found for field \(field)")
+			print("ERROR: Height doesn't found for field \(field)")
 		}
 
 		return result

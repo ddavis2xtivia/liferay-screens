@@ -23,8 +23,8 @@ public protocol CredentialsStore {
 	var authentication: LRAuthentication? { get }
 	var userAttributes: [String:AnyObject]? { get }
 
-	func storeCredentials(session: LRSession?, userAttributes: [String:AnyObject]?) -> Bool
-	func removeStoredCredentials() -> Bool
-	func loadStoredCredentials() -> Bool
+	func storeCredentials(session: LRSession?, userAttributes: [String:AnyObject]?) throws
+	func removeStoredCredentials() throws
+    func loadStoredCredentials() throws -> Bool
 
 }

@@ -46,7 +46,7 @@ public class LiferayUpdateCurrentUserOperation: ServerOperation {
 		return error
 	}
 
-	override public func doRun(#session: LRSession) {
+	override public func doRun(session session: LRSession) {
 		func attributeAsString(key: String) -> String {
 			return SessionContext.userAttribute(key) as! String
 		}
@@ -58,66 +58,61 @@ public class LiferayUpdateCurrentUserOperation: ServerOperation {
 
 		let service = LRUserService_v62(session: session)
 
-		var outError: NSError?
+        do {
+            //FIXME
+            // Values marked with (!!) will be overwritten in the server
+            // The JSON WS API isn't able to handle this scenario correctly
+            let result = try service.updateUserWithUserId(attributeAsId("userId"),
+                    oldPassword: SessionContext.currentBasicPassword,
+                    newPassword1: viewModel.password ?? "",
+                    newPassword2: viewModel.password ?? "",
+                    passwordReset: false,
+                    reminderQueryQuestion: attributeAsString("reminderQueryQuestion"),
+                    reminderQueryAnswer: "", // (!!)
+                    screenName: attributeAsString("screenName"),
+                    emailAddress: viewModel.emailAddress,
+                    facebookId: attributeAsId("facebookId"),
+                    openId: attributeAsString("openId"),
+                    languageId: attributeAsString("languageId"),
+                    timeZoneId: attributeAsString("timeZoneId"),
+                    greeting: attributeAsString("greeting"),
+                    comments: attributeAsString("comments"),
+                    firstName: viewModel.firstName ?? "",
+                    middleName: viewModel.middleName ?? "",
+                    lastName: viewModel.lastName ?? "",
+                    prefixId: 0, 		// (!!)
+                    suffixId: 0, 		// (!!)
+                    male: true, 		// (!!)
+                    birthdayMonth: 1, 	// (!!)
+                    birthdayDay: 1, 	// (!!)
+                    birthdayYear: 1970, // (!!)
+                    smsSn: "", 			// (!!)
+                    aimSn: "", 			// (!!)
+                    facebookSn: "", 	// (!!)
+                    icqSn: "", 			// (!!)
+                    jabberSn: "", 		// (!!)
+                    msnSn: "", 			// (!!)
+                    mySpaceSn: "", 		// (!!)
+                    skypeSn: "", 		// (!!)
+                    twitterSn: "", 		// (!!)
+                    ymSn: "", 			// (!!)
+                    jobTitle: viewModel.jobTitle ?? "",
+                    groupIds: [NSNumber(longLong: LiferayServerContext.groupId)],
+                    organizationIds: [AnyObject](),
+                    roleIds: [AnyObject](),
+                    userGroupRoles: [AnyObject](),
+                    userGroupIds: [AnyObject](),
+                    serviceContext: nil)
 
-		//FIXME 
-		// Values marked with (!!) will be overwritten in the server
-		// The JSON WS API isn't able to handle this scenario correctly
-		let result = service.updateUserWithUserId(attributeAsId("userId"),
-				oldPassword: SessionContext.currentBasicPassword,
-				newPassword1: viewModel.password ?? "",
-				newPassword2: viewModel.password ?? "",
-				passwordReset: false,
-				reminderQueryQuestion: attributeAsString("reminderQueryQuestion"),
-				reminderQueryAnswer: "", // (!!)
-				screenName: attributeAsString("screenName"),
-				emailAddress: viewModel.emailAddress,
-				facebookId: attributeAsId("facebookId"),
-				openId: attributeAsString("openId"),
-				languageId: attributeAsString("languageId"),
-				timeZoneId: attributeAsString("timeZoneId"),
-				greeting: attributeAsString("greeting"),
-				comments: attributeAsString("comments"),
-				firstName: viewModel.firstName ?? "",
-				middleName: viewModel.middleName ?? "",
-				lastName: viewModel.lastName ?? "",
-				prefixId: 0, 		// (!!)
-				suffixId: 0, 		// (!!)
-				male: true, 		// (!!)
-				birthdayMonth: 1, 	// (!!)
-				birthdayDay: 1, 	// (!!)
-				birthdayYear: 1970, // (!!)
-				smsSn: "", 			// (!!)
-				aimSn: "", 			// (!!)
-				facebookSn: "", 	// (!!)
-				icqSn: "", 			// (!!)
-				jabberSn: "", 		// (!!)
-				msnSn: "", 			// (!!)
-				mySpaceSn: "", 		// (!!)
-				skypeSn: "", 		// (!!)
-				twitterSn: "", 		// (!!)
-				ymSn: "", 			// (!!)
-				jobTitle: viewModel.jobTitle ?? "",
-				groupIds: [NSNumber(longLong: LiferayServerContext.groupId)],
-				organizationIds: [AnyObject](),
-				roleIds: [AnyObject](),
-				userGroupRoles: [AnyObject](),
-				userGroupIds: [AnyObject](),
-				serviceContext: nil,
-				error: &outError)
-
-		if outError != nil {
-			lastError = outError!
-			resultUserAttributes = nil
-		}
-		else if result?["userId"] == nil {
-			lastError = NSError.errorWithCause(.InvalidServerResponse, userInfo: nil)
-			resultUserAttributes = nil
-		}
-		else {
-			lastError = nil
-			resultUserAttributes = result as? [String:AnyObject]
-		}
+            if result["userId"] == nil {
+                throw NSError.errorWithCause(.InvalidServerResponse, userInfo: nil)
+            }
+            lastError = nil
+            resultUserAttributes = result as? [String:AnyObject]
+        } catch {
+            lastError = error as NSError
+            resultUserAttributes = nil
+        }
 	}
 
 }

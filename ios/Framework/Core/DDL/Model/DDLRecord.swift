@@ -99,7 +99,7 @@ public class DDLRecord: NSObject, NSCoding {
 		}
 	}
 
-	public required init(coder aDecoder: NSCoder) {
+	public required init?(coder aDecoder: NSCoder) {
 		fields = aDecoder.decodeObjectForKey("fields") as! [DDLField]
 		attributes = aDecoder.decodeObjectForKey("attributes") as! [String:AnyObject]
 
@@ -115,7 +115,7 @@ public class DDLRecord: NSObject, NSCoding {
 
 	//MARK: Public methods
 
-	public func fieldBy(#name: String) -> DDLField? {
+	public func fieldBy(name name: String) -> DDLField? {
 		for field in fields {
 			if field.name.lowercaseString == name.lowercaseString {
 				return field
@@ -125,7 +125,7 @@ public class DDLRecord: NSObject, NSCoding {
 		return nil
 	}
 
-	public func fieldsBy(#type: AnyClass) -> [DDLField] {
+	public func fieldsBy(type type: AnyClass) -> [DDLField] {
 		var result = [DDLField]()
 		let typeName = NSStringFromClass(type)
 
@@ -139,7 +139,7 @@ public class DDLRecord: NSObject, NSCoding {
 	}
 
 	public func updateCurrentValues(values: [String:AnyObject]) {
-		for (index,field) in enumerate(fields) {
+		for (_,field) in fields.enumerate() {
 			let fieldValueLabel: AnyObject? = (values[field.name] ?? nil)
 			if fieldValueLabel != nil {
 				if fieldValueLabel is String {

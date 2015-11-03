@@ -48,10 +48,8 @@ public class LiferaySignUpOperation: ServerOperation {
 		return error
 	}
 
-	override public func doRun(#session: LRSession) {
+	override public func doRun(session session: LRSession) {
 		let service = LRUserService_v62(session: session)
-
-		var outError: NSError?
 
 		let emptyDict = [AnyObject]()
 
@@ -60,46 +58,43 @@ public class LiferaySignUpOperation: ServerOperation {
 		let companyId = (self.companyId != 0)
 				? self.companyId : LiferayServerContext.companyId
 
-		let result = service.addUserWithCompanyId(companyId,
-				autoPassword: (password == ""),
-				password1: password,
-				password2: password,
-				autoScreenName: true,
-				screenName: viewModel.screenName ?? "",
-				emailAddress: viewModel.emailAddress,
-				facebookId: 0,
-				openId: "",
-				locale: NSLocale.currentLocaleString,
-				firstName: viewModel.firstName ?? "",
-				middleName: viewModel.middleName ?? "",
-				lastName: viewModel.lastName ?? "",
-				prefixId: 0,
-				suffixId: 0,
-				male: true,
-				birthdayMonth: 1,
-				birthdayDay: 1,
-				birthdayYear: 1970,
-				jobTitle: viewModel.jobTitle ?? "",
-				groupIds: [NSNumber(longLong: LiferayServerContext.groupId)],
-				organizationIds: emptyDict,
-				roleIds: emptyDict,
-				userGroupIds: emptyDict,
-				sendEmail: true,
-				serviceContext: nil,
-				error: &outError)
-
-		if outError != nil {
-			lastError = outError!
-			resultUserAttributes = nil
-		}
-		else if result?["userId"] == nil {
-			lastError = NSError.errorWithCause(.InvalidServerResponse, userInfo: nil)
-			resultUserAttributes = nil
-		}
-		else {
-			lastError = nil
-			resultUserAttributes = result as? [String:AnyObject]
-		}
+        do {
+            let result = try service.addUserWithCompanyId(companyId,
+                autoPassword: (password == ""),
+                password1: password,
+                password2: password,
+                autoScreenName: true,
+                screenName: viewModel.screenName ?? "",
+                emailAddress: viewModel.emailAddress,
+                facebookId: 0,
+                openId: "",
+                locale: NSLocale.currentLocaleString,
+                firstName: viewModel.firstName ?? "",
+                middleName: viewModel.middleName ?? "",
+                lastName: viewModel.lastName ?? "",
+                prefixId: 0,
+                suffixId: 0,
+                male: true,
+                birthdayMonth: 1,
+                birthdayDay: 1,
+                birthdayYear: 1970,
+                jobTitle: viewModel.jobTitle ?? "",
+                groupIds: [NSNumber(longLong: LiferayServerContext.groupId)],
+                organizationIds: emptyDict,
+                roleIds: emptyDict,
+                userGroupIds: emptyDict,
+                sendEmail: true,
+                serviceContext: nil)
+            if result["userId"] == nil {
+                throw NSError.errorWithCause(.InvalidServerResponse, userInfo: nil)
+            } else {
+                lastError = nil
+                resultUserAttributes = result as? [String:AnyObject]
+            }
+        } catch {
+            lastError = error as NSError
+            resultUserAttributes = nil
+        }
 	}
 
 	override public func createSession() -> LRSession? {

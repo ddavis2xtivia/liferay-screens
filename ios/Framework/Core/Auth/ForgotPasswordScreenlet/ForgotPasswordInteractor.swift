@@ -22,7 +22,7 @@ class ForgotPasswordInteractor: ServerOperationInteractor {
 		let screenlet = self.screenlet as! ForgotPasswordScreenlet
 
 		if screenlet.anonymousApiUserName == nil || screenlet.anonymousApiPassword == nil {
-			println("[ERROR] Anonymous credentials are required for this interaction")
+			print("[ERROR] Anonymous credentials are required for this interaction")
 			return nil
 		}
 
@@ -52,7 +52,8 @@ class ForgotPasswordInteractor: ServerOperationInteractor {
 	}
 
 	override func completedOperation(op: ServerOperation) {
-		self.resultPasswordSent = (op as! LiferayForgotPasswordBaseOperation).resultPasswordSent
+		(op as! LiferayForgotPasswordBaseOperation)
+        self.resultPasswordSent = true
 	}
 
 	override func interactionResult() -> AnyObject? {

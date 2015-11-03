@@ -50,27 +50,20 @@ public class GetUserBaseOperation: ServerOperation {
 						password: password!))
 	}
 
-	override public func doRun(#session: LRSession) {
-		var outError: NSError?
-
+	override public func doRun(session session: LRSession) {
 		resultUserAttributes = nil
 
-		let result = sendGetUserRequest(
-				service: LRUserService_v62(session: session),
-				error: &outError)
-
-		if outError != nil {
-			lastError = outError
-			resultUserAttributes = nil
-		}
-		else if result?["userId"] == nil {
-			lastError = NSError.errorWithCause(.InvalidServerResponse)
-			resultUserAttributes = nil
-		}
-		else {
-			lastError = nil
-			resultUserAttributes = result as? [String:AnyObject]
-		}
+        do {
+            let result = try sendGetUserRequest(service: LRUserService_v62(session: session))
+            if result?["userId"] == nil {
+                throw NSError.errorWithCause(.InvalidServerResponse)
+            }
+            lastError = nil
+            resultUserAttributes = result as? [String:AnyObject]
+        } catch {
+            lastError = error as NSError
+            resultUserAttributes = nil
+        }
 	}
 
 	internal func setResultAsSessionContext() -> Bool {
@@ -90,8 +83,7 @@ public class GetUserBaseOperation: ServerOperation {
 	// MARK: Template methods
 
 	internal func sendGetUserRequest(
-			#service: LRUserService_v62,
-			error: NSErrorPointer)
+			service service: LRUserService_v62) throws
 			-> NSDictionary? {
 
 		fatalError("sendGetUserRequest must be overriden")

@@ -78,19 +78,15 @@ class CredentialStoreMock : CredentialsStore {
 
 	var hasData: Bool = true
 
-	func storeCredentials(session: LRSession?, userAttributes: [String:AnyObject]?) -> Bool {
+	func storeCredentials(session: LRSession?, userAttributes: [String:AnyObject]?) throws {
 		calledStoreCredential = true
-
-		return hasData
 	}
 
-	func removeStoredCredentials() -> Bool {
+	func removeStoredCredentials() throws {
 		calledRemoveCredential = true
-
-		return hasData
 	}
 
-	func loadStoredCredentials() -> Bool {
+	func loadStoredCredentials() throws -> Bool {
 		calledLoadCredential = true
 
 		return hasData

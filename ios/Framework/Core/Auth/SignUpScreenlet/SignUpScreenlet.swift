@@ -59,7 +59,7 @@ import UIKit
 
 	//MARK: BaseScreenlet
 
-	override public func createInteractor(#name: String, sender: AnyObject?) -> Interactor? {
+	override public func createInteractor(name name: String, sender: AnyObject?) -> Interactor? {
 
 		switch name {
 		case "signup-action":
@@ -82,11 +82,15 @@ import UIKit
 				self.doAutoLogin(interactor.resultUserAttributes!)
 
 				if self.saveCredentials {
-					SessionContext.removeStoredSession()
+                    do {
+                        try SessionContext.removeStoredSession()
 
-					if SessionContext.storeSession() {
-						self.autoLoginDelegate?.onScreenletCredentialsSaved?(self)
-					}
+                        if SessionContext.storeSession() {
+                            self.autoLoginDelegate?.onScreenletCredentialsSaved?(self)
+                        }
+                    } catch {
+                        print(error)
+                    }
 				}
 			}
 		}

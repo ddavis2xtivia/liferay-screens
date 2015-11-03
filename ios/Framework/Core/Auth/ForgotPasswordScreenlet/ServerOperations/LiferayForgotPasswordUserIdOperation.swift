@@ -18,14 +18,11 @@ public class LiferayForgotPasswordUserIdOperation: LiferayForgotPasswordBaseOper
 
 	//MARK: LiferayForgotPasswordBaseOperation
 
-	override internal func sendForgotPasswordRequest(
-			#service: LRScreensuserService_v62,
-			error: NSErrorPointer)
-			-> Bool? {
+	override internal func sendForgotPasswordRequest(service: LRScreensuserService_v62) throws {
 
-		let userId = Int64(viewModel.userName!.toInt()!)
+		let userId = Int64(Int(viewModel.userName!)!)
 
-		return service.sendPasswordByUserIdWithUserId(userId, error: error)
+		return try service.sendPasswordByUserIdWithUserId(userId)
 	}
 
 }

@@ -45,35 +45,41 @@ public class LiferayDDLListPageOperation: LiferayPaginationOperation {
 		return error
 	}
 
-	override internal func doGetPageRowsOperation(#session: LRBatchSession, startRow: Int, endRow: Int) {
+	override internal func doGetPageRowsOperation(session session: LRBatchSession, startRow: Int, endRow: Int) {
 		let service = LRScreensddlrecordService_v62(session: session)
 
-		if userId == nil {
-			service.getDdlRecordsWithDdlRecordSetId(recordSetId!,
-					locale: NSLocale.currentLocaleString,
-					start: Int32(startRow),
-					end: Int32(endRow),
-					error: nil)
-		}
-		else {
-			service.getDdlRecordsWithDdlRecordSetId(recordSetId!,
-					userId: userId!,
-					locale: NSLocale.currentLocaleString,
-					start: Int32(startRow),
-					end: Int32(endRow),
-					error: nil)
-		}
+        do {
+            if userId == nil {
+                try service.getDdlRecordsWithDdlRecordSetId(recordSetId!,
+                    locale: NSLocale.currentLocaleString,
+                    start: Int32(startRow),
+                    end: Int32(endRow))
+            }
+            else {
+                try service.getDdlRecordsWithDdlRecordSetId(recordSetId!,
+                    userId: userId!,
+                    locale: NSLocale.currentLocaleString,
+                    start: Int32(startRow),
+                    end: Int32(endRow))
+            }
+        } catch {
+            print(error)
+        }
 	}
 
-	override internal func doGetRowCountOperation(#session: LRBatchSession) {
+	override internal func doGetRowCountOperation(session session: LRBatchSession) {
 		let service = LRScreensddlrecordService_v62(session: session)
 
-		if userId == nil {
-			service.getDdlRecordsCountWithDdlRecordSetId(recordSetId!, error: nil)
-		}
-		else {
-			service.getDdlRecordsCountWithDdlRecordSetId(recordSetId!, userId: userId!, error: nil)
-		}
+        do {
+            if userId == nil {
+                try service.getDdlRecordsCountWithDdlRecordSetId(recordSetId!)
+            }
+            else {
+                try service.getDdlRecordsCountWithDdlRecordSetId(recordSetId!, userId: userId!)
+            }
+        } catch {
+            print(error)
+        }
 	}
 
 }

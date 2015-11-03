@@ -32,7 +32,7 @@ public class LiferayDDLFormRecordLoadOperation: ServerOperation {
 
 	//MARK: ServerOperation
 
-	override public func doRun(#session: LRSession) {
+	override public func doRun(session session: LRSession) {
 		let service = LRScreensddlrecordService_v62(session: session)
 
 		resultRecordData = nil
@@ -40,26 +40,26 @@ public class LiferayDDLFormRecordLoadOperation: ServerOperation {
 		resultRecordId = nil
 		lastError = nil
 
-		let recordDic = service.getDdlRecordWithDdlRecordId(recordId,
-				locale: NSLocale.currentLocaleString,
-				error: &lastError)
-
-		if lastError == nil {
-			if let resultData = recordDic["modelValues"] as? [String:AnyObject],
-					resultAttributes = recordDic["modelAttributes"] as? [String:AnyObject] {
-				resultRecordData = resultData
-				resultRecordAttributes = resultAttributes
-				resultRecordId = recordId
-			}
-			else if let resultData = recordDic as? [String:AnyObject] {
-				// backwards compat: plugins v1.1.0 and previous (pre LPS-58800)
-				resultRecordData = resultData
-				resultRecordId = recordId
-			}
-			else {
-				lastError = NSError.errorWithCause(.InvalidServerResponse)
-			}
-		}
+        do {
+            let recordDic = try service.getDdlRecordWithDdlRecordId(recordId,
+                locale: NSLocale.currentLocaleString)
+            if let resultData = recordDic["modelValues"] as? [String:AnyObject],
+                resultAttributes = recordDic["modelAttributes"] as? [String:AnyObject] {
+                    resultRecordData = resultData
+                    resultRecordAttributes = resultAttributes
+                    resultRecordId = recordId
+            }
+            else if let resultData = recordDic as? [String:AnyObject] {
+                // backwards compat: plugins v1.1.0 and previous (pre LPS-58800)
+                resultRecordData = resultData
+                resultRecordId = recordId
+            }
+            else {
+                lastError = NSError.errorWithCause(.InvalidServerResponse)
+            }
+        } catch {
+            lastError = error as NSError
+        }
 	}
 
 }

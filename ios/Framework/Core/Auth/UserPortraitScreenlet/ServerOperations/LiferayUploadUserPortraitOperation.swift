@@ -47,7 +47,7 @@ public class LiferayUploadUserPortraitOperation: ServerOperation {
 		return error
 	}
 
-	override public func doRun(#session: LRSession) {
+	override public func doRun(session session: LRSession) {
 		if let imageBytes = reduceImage(self.image!, factor: 0.95) {
 			self.image = nil
 			uploadBytes(imageBytes, withSession: session)
@@ -67,9 +67,9 @@ public class LiferayUploadUserPortraitOperation: ServerOperation {
 			return nil
 		}
 
-		var imageBytes = UIImageJPEGRepresentation(src, CGFloat(factor))
+		let imageBytes = UIImageJPEGRepresentation(src, CGFloat(factor))
 
-		return (imageBytes.length < maxSize)
+		return (imageBytes!.length < maxSize)
 				? imageBytes
 				: reduceImage(src, factor: factor - 0.05)
 	}
@@ -77,19 +77,18 @@ public class LiferayUploadUserPortraitOperation: ServerOperation {
 	private func uploadBytes(imageBytes: NSData, withSession session: LRSession) {
 		let service = LRUserService_v62(session: session)
 
-		lastError = nil
-
-		let result = service.updatePortraitWithUserId(self.userId, bytes: imageBytes, error: &lastError)
-
-		if lastError == nil {
-			if result is [String:AnyObject] {
-				uploadResult = result as? [String:AnyObject]
-			}
-			else {
-				lastError = NSError.errorWithCause(.InvalidServerResponse)
-			}
-		}
-
+        do {
+		let result = try service.updatePortraitWithUserId(self.userId, bytes: imageBytes)
+            if result is [String:AnyObject] {
+                uploadResult = result as? [String:AnyObject]
+            }
+            else {
+                throw NSError.errorWithCause(.InvalidServerResponse)
+            }
+            lastError = nil
+        } catch {
+            lastError = error as NSError
+        }
 	}
 
 }

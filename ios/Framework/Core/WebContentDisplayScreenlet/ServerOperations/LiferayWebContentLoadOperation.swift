@@ -41,33 +41,31 @@ public class LiferayWebContentLoadOperation: ServerOperation {
 		return error
 	}
 
-	override public func doRun(#session: LRSession) {
-		resultHTML = nil
-
+	override public func doRun(session session: LRSession) {
 		var result:String
 
-		if let template = templateId {
-			let service = LRScreensjournalarticleService_v62(session: session)
-
-			result = service.getJournalArticleContentWithGroupId(groupId!,
-				articleId: articleId!,
-				templateId: templateId!,
-				locale: NSLocale.currentLocaleString,
-				error: &lastError)
-		}
-		else {
-			let service = LRJournalArticleService_v62(session: session)
-
-			result = service.getArticleContentWithGroupId(groupId!,
-				articleId: articleId!,
-				languageId: NSLocale.currentLocaleString,
-				themeDisplay: nil,
-				error: &lastError)
-		}
-
-		if lastError == nil {
-			resultHTML = result
-		}
+        do {
+            if templateId != nil {
+                let service = LRScreensjournalarticleService_v62(session: session)
+                
+                result = try service.getJournalArticleContentWithGroupId(groupId!,
+                    articleId: articleId!,
+                    templateId: templateId!,
+                    locale: NSLocale.currentLocaleString)
+            }
+            else {
+                let service = LRJournalArticleService_v62(session: session)
+                
+                result = try service.getArticleContentWithGroupId(groupId!,
+                    articleId: articleId!,
+                    languageId: NSLocale.currentLocaleString,
+                    themeDisplay: nil)
+            }
+            
+            resultHTML = result
+        } catch {
+            resultHTML = nil
+        }
 	}
 
 }

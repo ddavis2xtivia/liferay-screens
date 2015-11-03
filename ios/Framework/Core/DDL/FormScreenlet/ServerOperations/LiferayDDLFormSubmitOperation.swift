@@ -72,7 +72,7 @@ public class LiferayDDLFormSubmitOperation: ServerOperation {
 		return error
 	}
 
-	override public func doRun(#session: LRSession) {
+	override public func doRun(session session: LRSession) {
 		let service = LRDDLRecordService_v62(session: session)
 
 		let serviceContextAttributes = [
@@ -86,32 +86,31 @@ public class LiferayDDLFormSubmitOperation: ServerOperation {
 
 		var recordDictionary: [NSObject : AnyObject]?
 
-		if recordId == nil {
-			recordDictionary = service.addRecordWithGroupId(groupId!,
-				recordSetId: recordSetId!,
-				displayIndex: 0,
-				fieldsMap: values,
-				serviceContext: serviceContextWrapper,
-				error: &lastError)
-		}
-		else {
-			recordDictionary = service.updateRecordWithRecordId(recordId!,
-				displayIndex: 0,
-				fieldsMap: values,
-				mergeFields: true,
-				serviceContext: serviceContextWrapper,
-				error: &lastError)
-		}
-
-		if lastError == nil {
-			if let recordIdValue = recordDictionary?["recordId"]?.longLongValue {
-				resultRecordId = recordIdValue
-				resultAttributes = recordDictionary
-			}
-			else {
-				lastError = NSError.errorWithCause(.InvalidServerResponse)
-			}
-		}
+        do {
+            if recordId == nil {
+                recordDictionary = try service.addRecordWithGroupId(groupId!,
+                    recordSetId: recordSetId!,
+                    displayIndex: 0,
+                    fieldsMap: values,
+                    serviceContext: serviceContextWrapper)
+            }
+            else {
+                recordDictionary = try service.updateRecordWithRecordId(recordId!,
+                    displayIndex: 0,
+                    fieldsMap: values,
+                    mergeFields: true,
+                    serviceContext: serviceContextWrapper)
+            }
+            if let recordIdValue = recordDictionary?["recordId"]?.longLongValue {
+                resultRecordId = recordIdValue
+                resultAttributes = recordDictionary
+            }
+            else {
+                throw NSError.errorWithCause(.InvalidServerResponse)
+            }
+        } catch {
+            lastError = error as NSError
+        }
 	}
 
 }

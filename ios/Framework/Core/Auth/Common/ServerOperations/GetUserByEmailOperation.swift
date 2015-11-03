@@ -41,16 +41,9 @@ public class GetUserByEmailOperation: GetUserBaseOperation {
 
 	//MARK: LiferayLoginBaseOperation
 
-	override internal func sendGetUserRequest(
-			#service: LRUserService_v62,
-			error: NSErrorPointer)
-			-> NSDictionary? {
-
+	override internal func sendGetUserRequest(service service: LRUserService_v62) throws -> NSDictionary? {
 		let companyId = (self.companyId != 0) ? self.companyId : LiferayServerContext.companyId
-
-		return service.getUserByEmailAddressWithCompanyId(companyId,
-				emailAddress: emailAddress,
-				error: error)
+        return try service.getUserByEmailAddressWithCompanyId(companyId, emailAddress: emailAddress)
 	}
 
 }
