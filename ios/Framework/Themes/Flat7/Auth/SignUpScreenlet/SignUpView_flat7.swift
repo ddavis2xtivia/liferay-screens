@@ -65,7 +65,7 @@ public class SignUpView_flat7: SignUpView_default {
 			replacementString string: String!)
 			-> Bool {
 
-		let newText = (textField.text as NSString).stringByReplacingCharactersInRange(range, withString:string)
+		let newText = (textField.text! as NSString).stringByReplacingCharactersInRange(range, withString:string)
 
 		var placeholder = firstNamePlaceholder!
 

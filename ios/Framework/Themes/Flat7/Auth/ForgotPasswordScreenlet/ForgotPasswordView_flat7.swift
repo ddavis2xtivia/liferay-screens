@@ -65,7 +65,7 @@ public class ForgotPasswordView_flat7: ForgotPasswordView_default {
 			replacementString string: String!)
 			-> Bool {
 
-		let newText = (textField.text as NSString).stringByReplacingCharactersInRange(range,
+		let newText = (textField.text! as NSString).stringByReplacingCharactersInRange(range,
 				withString:string)
 
 		userNamePlaceholder!.changeVisibility(visible: newText != "")
