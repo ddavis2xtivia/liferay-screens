@@ -317,16 +317,16 @@ public enum CacheStrategyType: String {
 	}
 
 	private func registerPendingToSyncView(result: (Bool -> ())?) {
-		let grouping = YapDatabaseViewGrouping.withKeyBlock { (collection, key) in
+        let grouping = YapDatabaseViewGrouping.withKeyBlock { (transaction,collection,key) in
 			return collection
 		}
 
-		let sorting = YapDatabaseViewSorting.withKeyBlock { (_, _, key1, _, key2) in
+		let sorting = YapDatabaseViewSorting.withKeyBlock { (transaction,_, _, key1, _, key2) in
 			//TODO sort by added date
 			return key1.compare(key2)
 		}
 
-		let filtering = YapDatabaseViewFiltering.withMetadataBlock({ (_,_,_, metadata: AnyObject!) in
+		let filtering = YapDatabaseViewFiltering.withMetadataBlock({ (transaction,_,_,_, metadata: AnyObject!) in
 			let cacheMetadata = metadata as? CacheMetadata
 			return cacheMetadata?.synchronized == nil
 		})
